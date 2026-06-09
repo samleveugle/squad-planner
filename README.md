@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Squad Planner
 
-## Getting Started
+Webapp voor onze voetbalploeg om trainingen en wedstrijden te plannen. Spelers geven aan of ze **aanwezig**, **twijfel** of **afwezig** zijn. Administrators zien per event wie er komt — als basis voor een opstelling.
 
-First, run the development server:
+> **Status:** Sessie 1 — frontend met mock data. Nog geen login, database of persistente opslag.
+
+## Functies (huidige versie)
+
+- Kalenderweergave met trainingen en wedstrijden
+- Per speler beschikbaarheid aangeven: aanwezig / twijfel / afwezig
+- Speler simuleren via dropdown ("Wie ben jij?")
+- Admin-overzicht met **namen per status** (handig voor opstellingen)
+- Admin-tab alleen zichtbaar voor spelers met `isAdmin: true`
+
+## Tech stack
+
+- [Next.js 16](https://nextjs.org/) (App Router)
+- [React 19](https://react.dev/)
+- [Tailwind CSS v4](https://tailwindcss.com/)
+- [shadcn/ui](https://ui.shadcn.com/) (Button, Card, Badge, Select, Tabs)
+- JavaScript (geen TypeScript)
+
+## Lokaal starten
 
 ```bash
+# Dependencies installeren (eerste keer of na clone)
+npm install
+
+# Development server starten
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in je browser.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+Andere scripts:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build   # Productie-build
+npm run start   # Productie-server (na build)
+npm run lint    # ESLint
+```
 
-## Learn More
+## Projectstructuur
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/
+│   ├── layout.js          # Shell (fonts, metadata)
+│   ├── page.js            # Homepage → SquadPlanner
+│   └── globals.css        # Tailwind + thema
+├── components/
+│   ├── SquadPlanner.jsx   # Hoofdcomponent (useState)
+│   ├── ui/                # shadcn/ui componenten
+│   ├── calendar/          # WeekView, EventCard
+│   ├── availability/      # AvailabilityPicker, AvailabilityBadge
+│   ├── admin/             # AdminOverview
+│   └── layout/            # Header, PlayerSelector
+└── lib/
+    ├── mock-data.js       # Spelers, events, helpers
+    └── utils.js           # cn() helper voor Tailwind
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Hoe het werkt
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Alle interactieve state zit in `SquadPlanner.jsx`:
 
-## Deploy on Vercel
+- `currentPlayerId` — welke speler is "ingelogd" (simulatie)
+- `responses` — antwoorden per speler per event, bv. `{ "1-t1": "present" }`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Data stroomt **omlaag via props**, wijzigingen gaan **omhoog via callbacks** — standaard React-patroon.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Mock data (spelers, datums) staat in `src/lib/mock-data.js`. Antwoorden verdwijnen bij refresh — bewust, tot we een database toevoegen.
+
+## Roadmap
+
+| Sessie | Onderwerp |
+|--------|-----------|
+| ✅ 1 | Basis UI, mock data, admin-overzicht |
+| 2 | Weeknavigatie, betere kalender |
+| 3 | Opstelling maken (admin) |
+| 4 | Opstelling tonen aan spelers |
+| Later | Database, login, echte authenticatie |
+
+## Git workflow
+
+Na elke sessie:
+
+```bash
+git add .
+git commit -m "Sessie X: korte beschrijving"
+git push
+```
+
+## Deploy (later)
+
+Deploy kan via [Vercel](https://vercel.com/) — gratis voor Next.js-projecten. Eerst lokaal afwerken; deployen doen we wanneer login en database klaar zijn.
