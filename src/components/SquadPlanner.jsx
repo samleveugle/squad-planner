@@ -8,16 +8,24 @@ import { Header } from "@/components/layout/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   EVENTS,
+  getDefaultWeekStart,
+  getEventsForWeek,
   getPlayerById,
   getResponseKey,
-  PLAYERS,
+  getWeekStart,
 } from "@/lib/mock-data";
 
 export function SquadPlanner() {
-  const [currentPlayerId, setCurrentPlayerId] = useState(PLAYERS[0].id);
+  const [currentPlayerId, setCurrentPlayerId] = useState("senne");
   const [responses, setResponses] = useState({});
+  const [weekStart, setWeekStart] = useState(() => getDefaultWeekStart(EVENTS));
 
   const currentPlayer = getPlayerById(currentPlayerId);
+  const weekEvents = getEventsForWeek(EVENTS, weekStart);
+
+  function handleWeekChange(date) {
+    setWeekStart(getWeekStart(date));
+  }
 
   function handleAvailabilityChange(eventId, status) {
     const responseKey = getResponseKey(currentPlayerId, eventId);
@@ -27,6 +35,15 @@ export function SquadPlanner() {
       [responseKey]: status,
     }));
   }
+
+  const weekViewProps = {
+    events: weekEvents,
+    weekStart,
+    onWeekChange: handleWeekChange,
+    currentPlayerId,
+    responses,
+    onAvailabilityChange: handleAvailabilityChange,
+  };
 
   return (
     <div className="min-h-full bg-muted/30">
@@ -44,25 +61,20 @@ export function SquadPlanner() {
             </TabsList>
 
             <TabsContent value="player">
-              <WeekView
-                events={EVENTS}
-                currentPlayerId={currentPlayerId}
-                responses={responses}
-                onAvailabilityChange={handleAvailabilityChange}
-              />
+              <WeekView {...weekViewProps} />
             </TabsContent>
 
             <TabsContent value="admin">
-              <AdminOverview responses={responses} />
+              <AdminOverview
+                events={weekEvents}
+                weekStart={weekStart}
+                onWeekChange={handleWeekChange}
+                responses={responses}
+              />
             </TabsContent>
           </Tabs>
         ) : (
-          <WeekView
-            events={EVENTS}
-            currentPlayerId={currentPlayerId}
-            responses={responses}
-            onAvailabilityChange={handleAvailabilityChange}
-          />
+          <WeekView {...weekViewProps} />
         )}
       </main>
     </div>

@@ -6,9 +6,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { AvailabilityPicker } from "@/components/availability/AvailabilityPicker";
-import { formatEventDate, getEventTitle } from "@/lib/mock-data";
+import { EventTeamSummary } from "@/components/availability/EventTeamSummary";
+import { formatEventDate, formatEventTime, getEventTitle } from "@/lib/mock-data";
 
-export function EventCard({ event, value, onChange }) {
+export function EventCard({
+  event,
+  value,
+  onChange,
+  responses,
+  currentPlayerId,
+}) {
   const isMatch = event.type === "match";
 
   return (
@@ -18,23 +25,34 @@ export function EventCard({ event, value, onChange }) {
           <div>
             <CardTitle className="text-lg">{getEventTitle(event)}</CardTitle>
             <CardDescription>
-              {formatEventDate(event.date)} · {event.time} · {event.location}
+              {formatEventDate(event.date)} · {formatEventTime(event)} ·{" "}
+              {event.location}
             </CardDescription>
           </div>
           <span
             className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
               isMatch
-                ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                ? event.isHome
+                  ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                  : "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300"
                 : "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
             }`}
           >
-            {isMatch ? "Wedstrijd" : "Training"}
+            {isMatch ? (event.isHome ? "Thuis" : "Uit") : "Training"}
           </span>
         </div>
       </CardHeader>
-      <CardContent>
-        <p className="mb-3 text-sm text-muted-foreground">Jouw beschikbaarheid</p>
-        <AvailabilityPicker value={value} onChange={onChange} />
+      <CardContent className="space-y-4">
+        <div>
+          <p className="mb-3 text-sm text-muted-foreground">Jouw beschikbaarheid</p>
+          <AvailabilityPicker value={value} onChange={onChange} />
+        </div>
+
+        <EventTeamSummary
+          eventId={event.id}
+          responses={responses}
+          currentPlayerId={currentPlayerId}
+        />
       </CardContent>
     </Card>
   );

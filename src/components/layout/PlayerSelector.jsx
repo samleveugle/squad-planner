@@ -14,7 +14,7 @@ export function PlayerSelector({ value, onChange }) {
         Wie ben jij?
       </label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger id="player-select" className="w-[220px]">
+        <SelectTrigger id="player-select" className="w-[240px]">
           <SelectValue placeholder="Kies een speler" />
         </SelectTrigger>
         <SelectContent>

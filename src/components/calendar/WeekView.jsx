@@ -1,30 +1,44 @@
 import { EventCard } from "@/components/calendar/EventCard";
+import { WeekNavigator } from "@/components/calendar/WeekNavigator";
 import { getResponseKey } from "@/lib/mock-data";
 
-export function WeekView({ events, currentPlayerId, responses, onAvailabilityChange }) {
+export function WeekView({
+  events,
+  weekStart,
+  onWeekChange,
+  currentPlayerId,
+  responses,
+  onAvailabilityChange,
+}) {
   return (
     <section className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Deze week</h2>
-        <p className="text-sm text-muted-foreground">
-          Kies per event of je aanwezig bent, twijfelt of afwezig bent.
-        </p>
-      </div>
+      <WeekNavigator weekStart={weekStart} onWeekChange={onWeekChange} />
 
-      <div className="space-y-4">
-        {events.map((event) => {
-          const responseKey = getResponseKey(currentPlayerId, event.id);
+      {events.length === 0 ? (
+        <div className="rounded-xl border border-dashed bg-card p-8 text-center">
+          <p className="font-medium">Geen events deze week</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Gebruik de pijltjes om een andere week te bekijken.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {events.map((event) => {
+            const responseKey = getResponseKey(currentPlayerId, event.id);
 
-          return (
-            <EventCard
-              key={event.id}
-              event={event}
-              value={responses[responseKey] ?? null}
-              onChange={(status) => onAvailabilityChange(event.id, status)}
-            />
-          );
-        })}
-      </div>
+            return (
+              <EventCard
+                key={event.id}
+                event={event}
+                value={responses[responseKey] ?? null}
+                onChange={(status) => onAvailabilityChange(event.id, status)}
+                responses={responses}
+                currentPlayerId={currentPlayerId}
+              />
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }
