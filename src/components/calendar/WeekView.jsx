@@ -9,6 +9,8 @@ export function WeekView({
   currentPlayerId,
   responses,
   onAvailabilityChange,
+  lineups,
+  onLineupViewed,
 }) {
   return (
     <section className="space-y-4">
@@ -34,6 +36,8 @@ export function WeekView({
                 onChange={(status) => onAvailabilityChange(event.id, status)}
                 responses={responses}
                 currentPlayerId={currentPlayerId}
+                lineups={lineups}
+                onLineupViewed={onLineupViewed}
               />
             );
           })}
