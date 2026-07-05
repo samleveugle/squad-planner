@@ -2,13 +2,14 @@
 
 Webapp voor onze voetbalploeg om trainingen en wedstrijden te plannen. Spelers geven aan of ze **aanwezig**, **twijfel** of **afwezig** zijn. Administrators stellen opstellingen samen, delen die wanneer ze klaar zijn, en vullen wedstrijd-stats in.
 
-> **Status:** Sessie 4 — frontend met mock data. Opstellingen, stats, dark mode. Nog geen login, database of persistente opslag.
+> **Status:** Sessie 5 — frontend met mock data. Maandkalender, opstellingen, stats, dark mode. Nog geen login, database of persistente opslag.
 
 ## Functies
 
 ### Kalender & beschikbaarheid
 - Seizoenskalender (training do 20u30, thuis/uit om de 2 zondagen)
-- Weeknavigatie, beschikbaarheid aanwezig/twijfel/afwezig
+- **Week-view** — events per week + beschikbaarheid
+- **Maand-view** — agenda-overzicht met gemarkeerde training/wedstrijd-dagen; klik op dag → spring naar juiste week
 - Live overzicht wie al gereageerd heeft
 - Dark/light theme toggle in header
 
@@ -21,7 +22,6 @@ Webapp voor onze voetbalploeg om trainingen en wedstrijden te plannen. Spelers g
 ### Stats
 - Admin vult goals/assists in per wedstrijd (enkel spelers uit opstelling + bank)
 - Spelers zien eigen seizoensstats + per wedstrijd
-- Admin-spelers zien ook ranking (sorteerbaar)
 
 ## Rollen & tabs
 
@@ -30,8 +30,6 @@ Webapp voor onze voetbalploeg om trainingen en wedstrijden te plannen. Spelers g
 | Speler | Ploegleden | Kalender · Opstelling · Stats |
 | Admin-only | Pol, Gijs | Kalender · Beschikbaarheid · Opstelling maken · Stats invoeren |
 | Admin + speler | Sam, Senne | Alle 6 tabs |
-
-Spelers hebben `isSquadPlayer: true`. Admins Pol en Gijs hebben `isSquadPlayer: false` — geen Opstelling/Stats tabs.
 
 ## Tech stack
 
@@ -50,40 +48,26 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ```
 src/
-├── app/                 # layout, page, globals.css (incl. dark theme)
+├── app/
 ├── components/
-│   ├── SquadPlanner.jsx # Hoofdcomponent (useState)
-│   ├── layout/          # Header, PlayerSelector, ThemeToggle
-│   ├── calendar/        # WeekView, EventCard, WeekNavigator
-│   ├── availability/    # AvailabilityPicker, EventTeamSummary
-│   ├── admin/           # AdminOverview
-│   ├── lineup/          # Opstelling (veld, bank, staf)
-│   └── stats/           # MatchStatsForm, StatsTab, ranking
+│   ├── SquadPlanner.jsx
+│   ├── calendar/        # WeekView, MonthView, CalendarTab, ...
+│   ├── lineup/
+│   ├── stats/
+│   └── ...
 └── lib/
-    ├── mock-data.js     # Spelers, events, isAdmin, isSquadPlayer
-    ├── formations.js
+    ├── mock-data.js
+    ├── calendar.js      # Maand-grid helpers
     ├── lineups.js
     └── stats.js
 ```
-
-## State (SquadPlanner.jsx)
-
-| State | Inhoud |
-|-------|--------|
-| `currentPlayerId` | Wie is "ingelogd" (simulatie) |
-| `responses` | Beschikbaarheid per event |
-| `lineups` | Opstelling per wedstrijd |
-| `matchStats` | Goals/assists per wedstrijd/speler |
-| `seenLineups` | Geziene opstelling-meldingen |
-| `weekStart` | Huidige week |
 
 ## Roadmap
 
 | Sessie | Onderwerp | Status |
 |--------|-----------|--------|
-| 1–3 | Basis, kalender, opstelling | ✅ |
-| 4 | Stats + polish (tabs, dark mode) | ✅ |
-| 5 | Layout polish | 🔜 |
+| 1–4 | Basis, kalender, opstelling, stats | ✅ |
+| 5 | Maandkalender + dark mode + UX | ✅ |
 | 6 | Database, login, live deploy | 🔜 |
 
 ## Git workflow

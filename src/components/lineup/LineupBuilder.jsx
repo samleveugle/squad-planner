@@ -244,7 +244,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
       />
 
       <div>
-        <p className="mb-2 text-sm font-medium">Basisopstelling (11)</p>
+        <p className="mb-2 text-sm font-medium">Basis</p>
         <div className="grid gap-2 sm:grid-cols-2">
           {formationData.positions.map((slot) => (
             <div key={slot.id} className="flex items-center gap-2">
@@ -259,7 +259,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
                   <SelectValue placeholder="Kies speler" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={EMPTY_VALUE}>— Geen —</SelectItem>
+                  <SelectItem value={EMPTY_VALUE}></SelectItem>
                   {getPlayersForSlot(positions[slot.id]).map((player) => (
                     <SelectItem key={player.id} value={player.id}>
                       {player.name}
@@ -273,7 +273,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
       </div>
 
       <div>
-        <p className="mb-2 text-sm font-medium">Bank (max {MAX_BENCH_PLAYERS})</p>
+        <p className="mb-2 text-sm font-medium">Bank</p>
         <div className="grid gap-2 sm:grid-cols-2">
           {bench.map((playerId, index) => (
             <div key={`bench-select-${index}`} className="flex items-center gap-2">
@@ -288,7 +288,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
                   <SelectValue placeholder="Kies speler" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={EMPTY_VALUE}>— Geen —</SelectItem>
+                  <SelectItem value={EMPTY_VALUE}></SelectItem>
                   {getPlayersForSlot(playerId).map((player) => (
                     <SelectItem key={player.id} value={player.id}>
                       {player.name}
@@ -302,7 +302,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
       </div>
 
       <div>
-        <p className="mb-2 text-sm font-medium">Staf (max {MAX_STAFF}, optioneel)</p>
+        <p className="mb-2 text-sm font-medium">Staf</p>
         <div className="grid gap-2 sm:grid-cols-2">
           {staff.map((playerId, index) => (
             <div key={`staff-select-${index}`} className="flex items-center gap-2">
@@ -317,7 +317,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
                   <SelectValue placeholder="Kies speler" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={EMPTY_VALUE}>— Geen —</SelectItem>
+                  <SelectItem value={EMPTY_VALUE}></SelectItem>
                   {getPlayersForSlot(playerId).map((player) => (
                     <SelectItem key={player.id} value={player.id}>
                       {player.name}

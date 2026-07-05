@@ -1,4 +1,4 @@
-import { getPlayerById, SQUAD_PLAYERS } from "@/lib/mock-data";
+import { EVENTS, getPlayerById, SQUAD_PLAYERS } from "@/lib/mock-data";
 
 export function createEmptyPlayerStats() {
   return { goals: 0, assists: 0 };

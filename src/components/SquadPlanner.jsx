@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AdminOverview } from "@/components/admin/AdminOverview";
-import { WeekView } from "@/components/calendar/WeekView";
+import { CalendarTab } from "@/components/calendar/CalendarTab";
 import { Header } from "@/components/layout/Header";
 import { LineupManager } from "@/components/lineup/LineupManager";
 import { LineupNotificationBanner } from "@/components/lineup/LineupNotificationBanner";
@@ -186,7 +186,10 @@ export function SquadPlanner() {
           </TabsList>
 
           <TabsContent value="calendar">
-            <WeekView {...weekViewProps} />
+            <CalendarTab
+              weekViewProps={weekViewProps}
+              onWeekChange={handleWeekChange}
+            />
           </TabsContent>
 
           {showPlayerTabs && (

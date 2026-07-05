@@ -20,13 +20,13 @@ export const SEASON = {
 
 const ADMINS = [
   { name: "Pol", isSquadPlayer: false },
-  { name: "Sam", isSquadPlayer: true },
-  { name: "Senne", isSquadPlayer: true },
   { name: "Gijs", isSquadPlayer: false },
+  { name: "Sam", isSquadPlayer: true },
+  { name: "Massi", isSquadPlayer: true },
+  { name: "Senne", isSquadPlayer: true },
 ];
 
 const PLAYER_NAMES = [
-  "Massi",
   "Sakke",
   "Achiel",
   "Apo",

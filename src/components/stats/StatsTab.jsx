@@ -11,12 +11,6 @@ export function StatsTab({ currentPlayer, matchStats }) {
         playerName={currentPlayer.name}
         matchStats={matchStats}
       />
-
-      {currentPlayer.isAdmin && (
-        <div className="rounded-lg border bg-muted/30 p-4">
-          <AdminStatsRanking matchStats={matchStats} />
-        </div>
-      )}
     </section>
   );
 }
