@@ -18,7 +18,12 @@ export const SEASON = {
   },
 };
 
-const ADMIN_NAMES = [ "Pol", "Sam", "Senne", "Gijs"];
+const ADMINS = [
+  { name: "Pol", isSquadPlayer: false },
+  { name: "Sam", isSquadPlayer: true },
+  { name: "Senne", isSquadPlayer: true },
+  { name: "Gijs", isSquadPlayer: false },
+];
 
 const PLAYER_NAMES = [
   "Massi",
@@ -55,14 +60,18 @@ function toPlayerId(name) {
   return name.toLowerCase().replace(/\s+/g, "-");
 }
 
-function createPlayer(name, isAdmin) {
-  return { id: toPlayerId(name), name, isAdmin };
+function createPlayer(name, { isAdmin = false, isSquadPlayer = true } = {}) {
+  return { id: toPlayerId(name), name, isAdmin, isSquadPlayer };
 }
 
 export const PLAYERS = [
-  ...ADMIN_NAMES.map((name) => createPlayer(name, true)),
-  ...PLAYER_NAMES.map((name) => createPlayer(name, false)),
+  ...ADMINS.map(({ name, isSquadPlayer }) =>
+    createPlayer(name, { isAdmin: true, isSquadPlayer })
+  ),
+  ...PLAYER_NAMES.map((name) => createPlayer(name)),
 ];
+
+export const SQUAD_PLAYERS = PLAYERS.filter((player) => player.isSquadPlayer);
 
 function toDateString(date) {
   const year = date.getFullYear();

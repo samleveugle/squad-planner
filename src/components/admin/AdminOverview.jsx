@@ -33,46 +33,25 @@ function EventAdminCard({ event, responses }) {
       <CardContent className="space-y-4">
         <div className="flex flex-wrap gap-2">
           <AvailabilityBadge status="present" />
-          <span className="text-sm text-muted-foreground">
-            {present.length} spelers
-          </span>
+          <span className="text-sm text-muted-foreground">{present.length}</span>
           <AvailabilityBadge status="doubt" />
-          <span className="text-sm text-muted-foreground">
-            {doubt.length} spelers
-          </span>
+          <span className="text-sm text-muted-foreground">{doubt.length}</span>
           <AvailabilityBadge status="absent" />
-          <span className="text-sm text-muted-foreground">
-            {absent.length} spelers
-          </span>
+          <span className="text-sm text-muted-foreground">{absent.length}</span>
         </div>
 
         <div className="space-y-3">
           <div>
-            <p className="mb-2 text-sm font-medium">
-              {AVAILABILITY.present.label}
-            </p>
-            <PlayerNameList
-              players={present}
-              emptyText="Nog niemand heeft zich aanwezig gemeld."
-            />
+            <p className="mb-2 text-sm font-medium">{AVAILABILITY.present.label}</p>
+            <PlayerNameList players={present} emptyText="—" />
           </div>
           <div>
-            <p className="mb-2 text-sm font-medium">
-              {AVAILABILITY.doubt.label}
-            </p>
-            <PlayerNameList
-              players={doubt}
-              emptyText="Niemand twijfelt momenteel."
-            />
+            <p className="mb-2 text-sm font-medium">{AVAILABILITY.doubt.label}</p>
+            <PlayerNameList players={doubt} emptyText="—" />
           </div>
           <div>
-            <p className="mb-2 text-sm font-medium">
-              {AVAILABILITY.absent.label}
-            </p>
-            <PlayerNameList
-              players={absent}
-              emptyText="Nog niemand is afwezig gemeld."
-            />
+            <p className="mb-2 text-sm font-medium">{AVAILABILITY.absent.label}</p>
+            <PlayerNameList players={absent} emptyText="—" />
           </div>
           {unanswered.length > 0 && (
             <div>
@@ -86,29 +65,16 @@ function EventAdminCard({ event, responses }) {
   );
 }
 
-export function AdminOverview({
-  events,
-  weekStart,
-  onWeekChange,
-  responses,
-}) {
+export function AdminOverview({ events, weekStart, onWeekChange, responses }) {
   return (
     <section className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Admin-overzicht</h2>
-        <p className="text-sm text-muted-foreground">
-          Zie per event wie er komt — handig om later een opstelling te maken.
-        </p>
-      </div>
+      <h2 className="text-lg font-semibold">Beschikbaarheid</h2>
 
       <WeekNavigator weekStart={weekStart} onWeekChange={onWeekChange} />
 
       {events.length === 0 ? (
         <div className="rounded-xl border border-dashed bg-card p-8 text-center">
           <p className="font-medium">Geen events deze week</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Gebruik de pijltjes om een week met training of wedstrijd te vinden.
-          </p>
         </div>
       ) : (
         <div className="space-y-4">

@@ -220,12 +220,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
   return (
     <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <p className="text-sm font-medium">Opstelling samenstellen</p>
-          <p className="text-xs text-muted-foreground">
-            Kies spelers uit aanwezig/twijfel ({eligiblePlayers.length} beschikbaar)
-          </p>
-        </div>
+        <p className="text-sm font-medium">Opstelling samenstellen</p>
         {isPublished ? (
           <Badge variant="present">Gepubliceerd</Badge>
         ) : (
@@ -235,8 +230,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
 
       {eligiblePlayers.length === 0 && (
         <p className="rounded-md border border-dashed bg-background p-3 text-sm text-muted-foreground">
-          Nog geen spelers met status aanwezig of twijfel. Laat spelers eerst
-          beschikbaarheid doorgeven.
+          Nog geen spelers met status aanwezig of twijfel.
         </p>
       )}
 

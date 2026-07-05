@@ -4,12 +4,7 @@ import { PlayerStatsView } from "@/components/stats/PlayerStatsView";
 export function StatsTab({ currentPlayer, matchStats }) {
   return (
     <section className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold">Stats</h2>
-        <p className="text-sm text-muted-foreground">
-          Goals en assists per speler doorheen het seizoen.
-        </p>
-      </div>
+      <h2 className="text-lg font-semibold">Stats</h2>
 
       <PlayerStatsView
         playerId={currentPlayer.id}

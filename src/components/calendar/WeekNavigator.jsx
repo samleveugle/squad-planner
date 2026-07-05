@@ -20,9 +20,6 @@ export function WeekNavigator({ weekStart, onWeekChange }) {
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h2 className="text-lg font-semibold">Week {formatWeekRange(weekStart)}</h2>
-        <p className="text-sm text-muted-foreground">
-          Blader door het seizoen en geef je beschikbaarheid door.
-        </p>
       </div>
 
       <div className="flex items-center gap-2">

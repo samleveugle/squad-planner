@@ -1,4 +1,4 @@
-import { EVENTS, getPlayerById, PLAYERS } from "@/lib/mock-data";
+import { getPlayerById, SQUAD_PLAYERS } from "@/lib/mock-data";
 
 export function createEmptyPlayerStats() {
   return { goals: 0, assists: 0 };
@@ -51,7 +51,7 @@ export function getPlayerMatchHistory(matchStats, playerId, events = EVENTS) {
 }
 
 export function getSeasonRanking(matchStats, sortBy = "goals") {
-  const ranking = PLAYERS.map((player) => ({
+  const ranking = SQUAD_PLAYERS.map((player) => ({
     player,
     ...getSeasonTotals(matchStats, player.id),
   }));
@@ -93,11 +93,12 @@ export function buildStatsPayload(playerStatsMap) {
   return payload;
 }
 
-export function createDraftFromSaved(matchStats, eventId) {
+export function createDraftFromSaved(matchStats, eventId, playerIds) {
   const draft = {};
+  const ids = playerIds ?? SQUAD_PLAYERS.map((player) => player.id);
 
-  for (const player of PLAYERS) {
-    draft[player.id] = getPlayerMatchStats(matchStats, eventId, player.id);
+  for (const playerId of ids) {
+    draft[playerId] = getPlayerMatchStats(matchStats, eventId, playerId);
   }
 
   return draft;

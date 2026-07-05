@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AdminOverview } from "@/components/admin/AdminOverview";
 import { WeekView } from "@/components/calendar/WeekView";
@@ -32,11 +32,21 @@ export function SquadPlanner() {
 
   const currentPlayer = getPlayerById(currentPlayerId);
   const weekEvents = getEventsForWeek(EVENTS, weekStart);
+  const showPlayerTabs = currentPlayer?.isSquadPlayer ?? false;
+  const showAdminTabs = currentPlayer?.isAdmin ?? false;
 
   const unseenLineupEvents = useMemo(
-    () => getUnseenPublishedLineups(EVENTS, lineups, seenLineups),
-    [lineups, seenLineups]
+    () =>
+      showPlayerTabs ? getUnseenPublishedLineups(EVENTS, lineups, seenLineups) : [],
+    [lineups, seenLineups, showPlayerTabs]
   );
+
+  useEffect(() => {
+    const playerOnlyTabs = ["lineup", "stats"];
+    if (!showPlayerTabs && playerOnlyTabs.includes(activeTab)) {
+      setActiveTab("calendar");
+    }
+  }, [currentPlayerId, showPlayerTabs, activeTab]);
 
   function handleWeekChange(date) {
     setWeekStart(getWeekStart(date));
@@ -140,44 +150,58 @@ export function SquadPlanner() {
       />
 
       <main className="mx-auto max-w-3xl space-y-4 px-4 py-8">
-        <LineupNotificationBanner
-          unseenEvents={unseenLineupEvents}
-          onView={handleViewLineupNotification}
-          onDismiss={handleDismissNotifications}
-        />
+        {showPlayerTabs && (
+          <LineupNotificationBanner
+            unseenEvents={unseenLineupEvents}
+            onView={handleViewLineupNotification}
+            onDismiss={handleDismissNotifications}
+          />
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="flex h-auto w-full flex-wrap">
+          <TabsList className="flex h-auto w-full flex-nowrap justify-start overflow-x-auto">
             <TabsTrigger value="calendar">Kalender</TabsTrigger>
-            <TabsTrigger value="lineup" className="relative">
-              Opstelling
-              {unseenLineupEvents.length > 0 && (
-                <span className="ml-1.5 inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="stats">Stats</TabsTrigger>
-            {currentPlayer.isAdmin && (
+
+            {showAdminTabs && (
               <>
                 <TabsTrigger value="admin">Beschikbaarheid</TabsTrigger>
                 <TabsTrigger value="lineup-admin">Opstelling maken</TabsTrigger>
-                <TabsTrigger value="stats-admin">Stats invoeren</TabsTrigger>
               </>
             )}
+
+            {showPlayerTabs && (
+              <TabsTrigger value="lineup" className="relative">
+                Opstelling
+                {unseenLineupEvents.length > 0 && (
+                  <span className="ml-1.5 inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                )}
+              </TabsTrigger>
+            )}
+
+            {showAdminTabs && (
+              <TabsTrigger value="stats-admin">Stats invoeren</TabsTrigger>
+            )}
+
+            {showPlayerTabs && <TabsTrigger value="stats">Stats</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="calendar">
             <WeekView {...weekViewProps} />
           </TabsContent>
 
-          <TabsContent value="lineup">
-            <LineupTab {...lineupTabProps} />
-          </TabsContent>
+          {showPlayerTabs && (
+            <TabsContent value="lineup">
+              <LineupTab {...lineupTabProps} />
+            </TabsContent>
+          )}
 
-          <TabsContent value="stats">
-            <StatsTab currentPlayer={currentPlayer} matchStats={matchStats} />
-          </TabsContent>
+          {showPlayerTabs && (
+            <TabsContent value="stats">
+              <StatsTab currentPlayer={currentPlayer} matchStats={matchStats} />
+            </TabsContent>
+          )}
 
-          {currentPlayer.isAdmin && (
+          {showAdminTabs && (
             <>
               <TabsContent value="admin">
                 <AdminOverview
@@ -207,6 +231,7 @@ export function SquadPlanner() {
                   weekStart={weekStart}
                   onWeekChange={handleWeekChange}
                   matchStats={matchStats}
+                  lineups={lineups}
                   onSaveMatchStats={handleSaveMatchStats}
                 />
               </TabsContent>

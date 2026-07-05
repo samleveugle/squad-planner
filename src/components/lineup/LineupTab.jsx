@@ -37,29 +37,17 @@ export function LineupTab({
 
   return (
     <section className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Opstellingen</h2>
-        <p className="text-sm text-muted-foreground">
-          Gepubliceerde opstellingen voor wedstrijden deze week.
-        </p>
-      </div>
+      <h2 className="text-lg font-semibold">Opstellingen</h2>
 
       <WeekNavigator weekStart={weekStart} onWeekChange={onWeekChange} />
 
       {matchEvents.length === 0 ? (
         <div className="rounded-xl border border-dashed bg-card p-8 text-center">
           <p className="font-medium">Geen wedstrijden deze week</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Blader naar een week met een thuis- of uitwedstrijd.
-          </p>
         </div>
       ) : publishedMatches.length === 0 ? (
         <div className="rounded-xl border border-dashed bg-card p-8 text-center">
           <p className="font-medium">Nog geen gepubliceerde opstelling</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            De admin deelt de opstelling wanneer hij klaar is (bv. vrijdag na
-            training).
-          </p>
         </div>
       ) : (
         <div className="space-y-4">

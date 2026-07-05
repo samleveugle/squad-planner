@@ -19,9 +19,6 @@ export function WeekView({
       {events.length === 0 ? (
         <div className="rounded-xl border border-dashed bg-card p-8 text-center">
           <p className="font-medium">Geen events deze week</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Gebruik de pijltjes om een andere week te bekijken.
-          </p>
         </div>
       ) : (
         <div className="space-y-4">

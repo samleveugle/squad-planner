@@ -53,6 +53,28 @@ export function getAllAssignedPlayerIds({ positions = {}, bench = [], staff = []
   ]);
 }
 
+export function getMatchSquadPlayerIds(lineup) {
+  if (!lineup) {
+    return [];
+  }
+
+  const normalized = normalizeLineup(lineup);
+  return [
+    ...Object.values(normalized.positions).filter(Boolean),
+    ...(normalized.bench ?? []).filter(Boolean),
+  ];
+}
+
+export function getMatchSquadPlayers(lineup) {
+  return getMatchSquadPlayerIds(lineup)
+    .map((playerId) => getPlayerById(playerId))
+    .filter(Boolean);
+}
+
+export function hasMatchSquad(lineup) {
+  return getMatchSquadPlayerIds(lineup).length > 0;
+}
+
 export function isPlayerInLineup(lineup, playerId) {
   if (!lineup || !playerId) {
     return false;

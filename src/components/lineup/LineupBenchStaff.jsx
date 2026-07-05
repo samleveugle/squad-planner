@@ -63,9 +63,6 @@ export function LineupBenchStaff({
             />
           ))}
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Max {MAX_STAFF} stafleden (optioneel)
-        </p>
       </div>
     </div>
   );
