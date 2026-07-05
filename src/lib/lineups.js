@@ -1,12 +1,30 @@
 import { DEFAULT_FORMATION, createEmptyPositions } from "@/lib/formations";
 import { getEventResponseSummary, getPlayerById } from "@/lib/mock-data";
 
+export const MAX_BENCH_PLAYERS = 5;
+export const MAX_STAFF = 3;
+
 export function createEmptyLineup(formation = DEFAULT_FORMATION) {
   return {
     formation,
     positions: createEmptyPositions(formation),
+    bench: [],
+    staff: [],
     published: false,
     publishedAt: null,
+  };
+}
+
+export function normalizeLineup(lineup, formation = DEFAULT_FORMATION) {
+  if (!lineup) {
+    return createEmptyLineup(formation);
+  }
+
+  return {
+    ...createEmptyLineup(lineup.formation ?? formation),
+    ...lineup,
+    bench: lineup.bench ?? [],
+    staff: lineup.staff ?? [],
   };
 }
 
@@ -19,12 +37,62 @@ export function getPublishedLineup(lineups, eventId) {
   if (!lineup?.published) {
     return null;
   }
-  return lineup;
+  return normalizeLineup(lineup);
 }
 
 export function getEligiblePlayers(eventId, responses) {
   const { present, doubt } = getEventResponseSummary(eventId, responses);
   return [...present, ...doubt];
+}
+
+export function getAllAssignedPlayerIds({ positions = {}, bench = [], staff = [] }) {
+  return new Set([
+    ...Object.values(positions).filter(Boolean),
+    ...bench.filter(Boolean),
+    ...staff.filter(Boolean),
+  ]);
+}
+
+export function isPlayerInLineup(lineup, playerId) {
+  if (!lineup || !playerId) {
+    return false;
+  }
+
+  const assigned = getAllAssignedPlayerIds(lineup);
+  return assigned.has(playerId);
+}
+
+export function getPlayerLineupRole(lineup, playerId) {
+  if (!lineup || !playerId) {
+    return null;
+  }
+
+  if (Object.values(lineup.positions ?? {}).includes(playerId)) {
+    return "field";
+  }
+
+  if ((lineup.bench ?? []).includes(playerId)) {
+    return "bench";
+  }
+
+  if ((lineup.staff ?? []).includes(playerId)) {
+    return "staff";
+  }
+
+  return null;
+}
+
+export function getLineupRoleLabel(role) {
+  switch (role) {
+    case "field":
+      return "Basisopstelling";
+    case "bench":
+      return "Bank";
+    case "staff":
+      return "Staf";
+    default:
+      return null;
+  }
 }
 
 export function getUnseenPublishedLineups(events, lineups, seenLineups) {
@@ -53,4 +121,12 @@ export function formatPublishedAt(isoString) {
 
 export function getPlayerName(playerId) {
   return getPlayerById(playerId)?.name ?? "Onbekend";
+}
+
+export function getBenchPlayers(bench = []) {
+  return bench.filter(Boolean).map((playerId) => getPlayerById(playerId)).filter(Boolean);
+}
+
+export function getStaffPlayers(staff = []) {
+  return staff.filter(Boolean).map((playerId) => getPlayerById(playerId)).filter(Boolean);
 }

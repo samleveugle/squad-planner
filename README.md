@@ -1,16 +1,37 @@
 # Squad Planner
 
-Webapp voor onze voetbalploeg om trainingen en wedstrijden te plannen. Spelers geven aan of ze **aanwezig**, **twijfel** of **afwezig** zijn. Administrators zien per event wie er komt — als basis voor een opstelling.
+Webapp voor onze voetbalploeg om trainingen en wedstrijden te plannen. Spelers geven aan of ze **aanwezig**, **twijfel** of **afwezig** zijn. Administrators stellen opstellingen samen en delen die wanneer ze klaar zijn.
 
-> **Status:** Sessie 1 — frontend met mock data. Nog geen login, database of persistente opslag.
+> **Status:** Sessie 3 — frontend met mock data. Opstellingen met formatie, bank, staf en publicatie. Nog geen login, database of persistente opslag.
 
 ## Functies (huidige versie)
 
-- Kalenderweergave met trainingen en wedstrijden
-- Per speler beschikbaarheid aangeven: aanwezig / twijfel / afwezig
-- Speler simuleren via dropdown ("Wie ben jij?")
-- Admin-overzicht met **namen per status** (handig voor opstellingen)
-- Admin-tab alleen zichtbaar voor spelers met `isAdmin: true`
+### Kalender & beschikbaarheid
+- Seizoenskalender: training elke **donderdag 20u30** (SK Laar), thuis/uitwedstrijden om de 2 zondagen
+- Weeknavigatie (← → en "Vandaag")
+- Per speler beschikbaarheid: **aanwezig / twijfel / afwezig**
+- Live overzicht: iedereen ziet wie al gereageerd heeft
+- Speler simuleren via dropdown ("Wie ben jij?") — vervangt later echte login
+
+### Opstelling (admin)
+- Opstelling samenstellen voor **wedstrijden** (niet trainingen)
+- Formaties: **4-3-3** (standaard) en **4-4-2**
+- Visueel voetbalveld (TV-stijl) met spelers op posities
+- **Bank:** max 5 spelers
+- **Staf:** max 3 spelers (optioneel)
+- Speler kan maar **1 rol** hebben (veld, bank of staf)
+- Draft opslaan → later **publiceren** of **verbergen**
+- Spelers kiezen uit spelers met status aanwezig/twijfel
+
+### Opstelling (spelers)
+- Melding wanneer admin een opstelling publiceert
+- Tab **Opstelling** + op wedstrijd-event cards
+- Alleen zichtbaar als gepubliceerd
+- Eigen naam geel gemarkeerd (veld, bank of staf)
+
+### Admin
+- Tab **Beschikbaarheid:** wie is aanwezig/twijfel/afwezig per event
+- Tab **Opstelling maken:** opstelling beheren per wedstrijd
 
 ## Tech stack
 
@@ -23,16 +44,11 @@ Webapp voor onze voetbalploeg om trainingen en wedstrijden te plannen. Spelers g
 ## Lokaal starten
 
 ```bash
-# Dependencies installeren (eerste keer of na clone)
 npm install
-
-# Development server starten
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in je browser.
-
-Andere scripts:
 
 ```bash
 npm run build   # Productie-build
@@ -51,35 +67,69 @@ src/
 ├── components/
 │   ├── SquadPlanner.jsx   # Hoofdcomponent (useState)
 │   ├── ui/                # shadcn/ui componenten
-│   ├── calendar/          # WeekView, EventCard
-│   ├── availability/      # AvailabilityPicker, AvailabilityBadge
+│   ├── layout/            # Header, PlayerSelector
+│   ├── calendar/          # WeekView, EventCard, WeekNavigator
+│   ├── availability/      # AvailabilityPicker, EventTeamSummary
 │   ├── admin/             # AdminOverview
-│   └── layout/            # Header, PlayerSelector
+│   └── lineup/            # Opstelling (veld, bank, staf)
+│       ├── LineupField.jsx
+│       ├── LineupDisplay.jsx
+│       ├── LineupBenchStaff.jsx
+│       ├── LineupBuilder.jsx
+│       ├── PublishedLineup.jsx
+│       ├── LineupManager.jsx
+│       ├── LineupTab.jsx
+│       └── LineupNotificationBanner.jsx
 └── lib/
-    ├── mock-data.js       # Spelers, events, helpers
-    └── utils.js           # cn() helper voor Tailwind
+    ├── mock-data.js       # Spelers, events, seizoen
+    ├── formations.js      # 4-3-3 & 4-4-2 posities
+    ├── lineups.js         # Opstelling helpers
+    └── utils.js           # cn() helper
 ```
 
 ## Hoe het werkt
 
 Alle interactieve state zit in `SquadPlanner.jsx`:
 
-- `currentPlayerId` — welke speler is "ingelogd" (simulatie)
-- `responses` — antwoorden per speler per event, bv. `{ "1-t1": "present" }`
+| State | Wat het bevat |
+|-------|----------------|
+| `currentPlayerId` | Wie is "ingelogd" (simulatie) |
+| `responses` | Beschikbaarheid per speler/event |
+| `lineups` | Opstelling per wedstrijd (formatie, posities, bank, staf, published) |
+| `seenLineups` | Welke opstelling-meldingen al gezien zijn |
+| `weekStart` | Welke week je bekijkt |
 
-Data stroomt **omlaag via props**, wijzigingen gaan **omhoog via callbacks** — standaard React-patroon.
+Voorbeeld opstelling:
 
-Mock data (spelers, datums) staat in `src/lib/mock-data.js`. Antwoorden verdwijnen bij refresh — bewust, tot we een database toevoegen.
+```javascript
+lineups["match-home-2026-08-09"] = {
+  formation: "4-3-3",
+  positions: { gk: "senne", st: "massi", ... },
+  bench: ["apo", "batti", "bomme", "brico", "brunt"],
+  staff: ["sam", "jalle", "gijs"],
+  published: true,
+  publishedAt: "2026-08-08T18:00:00.000Z"
+}
+```
+
+Data stroomt **omlaag via props**, wijzigingen gaan **omhoog via callbacks**. Mock data verdwijnt bij refresh — bewust, tot we een database toevoegen.
+
+## Spelers & admins
+
+- **28 spelers** (jullie ploeg)
+- **Admins:** Sam, Jalle, Gijs, Senne
+- Admin-tabs alleen zichtbaar voor spelers met `isAdmin: true`
 
 ## Roadmap
 
-| Sessie | Onderwerp |
-|--------|-----------|
-| ✅ 1 | Basis UI, mock data, admin-overzicht |
-| 2 | Weeknavigatie, betere kalender |
-| 3 | Opstelling maken (admin) |
-| 4 | Opstelling tonen aan spelers |
-| Later | Database, login, echte authenticatie |
+| Sessie | Onderwerp | Status |
+|--------|-----------|--------|
+| 1 | Basis UI, mock data, admin-overzicht | ✅ |
+| 2 | Weeknavigatie, echte spelers/seizoen, live ploegoverzicht | ✅ |
+| 3 | Opstelling (formatie, publiceren, bank, staf) | ✅ |
+| 4 | Stats (goals & assists per speler) | 🔜 |
+| 5 | Layout polish | 🔜 |
+| 6 | Database, login, live deploy | 🔜 |
 
 ## Git workflow
 
@@ -93,4 +143,4 @@ git push
 
 ## Deploy (later)
 
-Deploy kan via [Vercel](https://vercel.com/) — gratis voor Next.js-projecten. Eerst lokaal afwerken; deployen doen we wanneer login en database klaar zijn.
+Deploy via [Vercel](https://vercel.com/) wanneer database en login klaar zijn. Tot die tijd lokaal ontwikkelen met `npm run dev`.

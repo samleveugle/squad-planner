@@ -31,6 +31,38 @@ export const FORMATIONS = {
       { id: "gk", label: "K", x: 50, y: 82 },
     ],
   },
+  "3-5-2": {
+    label: "3-5-2",
+    positions: [
+      { id: "st1", label: "SP", x: 38, y: 10 },
+      { id: "st2", label: "SP", x: 62, y: 10 },
+      { id: "lm", label: "LM", x: 12, y: 35 },
+      { id: "cm1", label: "CM", x: 30, y: 42 },
+      { id: "cm2", label: "CM", x: 50, y: 45 },
+      { id: "cm3", label: "CM", x: 70, y: 42 },
+      { id: "rm", label: "RM", x: 88, y: 35 },
+      { id: "cb1", label: "CV", x: 28, y: 62 },
+      { id: "cb2", label: "CV", x: 50, y: 66 },
+      { id: "cb3", label: "CV", x: 72, y: 62 },
+      { id: "gk", label: "K", x: 50, y: 82 },
+    ],
+  },
+  "5-3-2": {
+    label: "5-3-2",
+    positions: [
+      { id: "st1", label: "SP", x: 38, y: 10 },
+      { id: "st2", label: "SP", x: 62, y: 10 },
+      { id: "cm1", label: "CM", x: 30, y: 40 },
+      { id: "cm2", label: "CM", x: 50, y: 44 },
+      { id: "cm3", label: "CM", x: 70, y: 40 },
+      { id: "lwb", label: "LV", x: 10, y: 56 },
+      { id: "cb1", label: "CV", x: 28, y: 62 },
+      { id: "cb2", label: "CV", x: 50, y: 66 },
+      { id: "cb3", label: "CV", x: 72, y: 62 },
+      { id: "rwb", label: "RV", x: 90, y: 56 },
+      { id: "gk", label: "K", x: 50, y: 82 },
+    ],
+  },
 };
 
 export const DEFAULT_FORMATION = "4-3-3";

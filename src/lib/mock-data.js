@@ -18,7 +18,7 @@ export const SEASON = {
   },
 };
 
-const ADMIN_NAMES = ["Sam", "Jalle", "Gijs", "Senne"];
+const ADMIN_NAMES = [ "Pol", "Sam", "Senne", "Gijs"];
 
 const PLAYER_NAMES = [
   "Massi",
@@ -45,6 +45,10 @@ const PLAYER_NAMES = [
   "Dakke",
   "Simon",
   "Doolhof",
+  "Jalle",
+  "Kobalt",
+  "Pirre",
+  "Siebe",
 ];
 
 function toPlayerId(name) {
