@@ -8,6 +8,8 @@ import { Header } from "@/components/layout/Header";
 import { LineupManager } from "@/components/lineup/LineupManager";
 import { LineupNotificationBanner } from "@/components/lineup/LineupNotificationBanner";
 import { LineupTab } from "@/components/lineup/LineupTab";
+import { StatsManager } from "@/components/stats/StatsManager";
+import { StatsTab } from "@/components/stats/StatsTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   EVENTS,
@@ -23,6 +25,7 @@ export function SquadPlanner() {
   const [currentPlayerId, setCurrentPlayerId] = useState("senne");
   const [responses, setResponses] = useState({});
   const [lineups, setLineups] = useState({});
+  const [matchStats, setMatchStats] = useState({});
   const [seenLineups, setSeenLineups] = useState({});
   const [weekStart, setWeekStart] = useState(() => getDefaultWeekStart(EVENTS));
   const [activeTab, setActiveTab] = useState("calendar");
@@ -93,6 +96,13 @@ export function SquadPlanner() {
     }));
   }
 
+  function handleSaveMatchStats(eventId, statsPayload) {
+    setMatchStats((previous) => ({
+      ...previous,
+      [eventId]: statsPayload,
+    }));
+  }
+
   function handleDismissNotifications() {
     unseenLineupEvents.forEach((event) => markLineupSeen(event.id));
   }
@@ -145,10 +155,12 @@ export function SquadPlanner() {
                 <span className="ml-1.5 inline-flex h-2 w-2 rounded-full bg-emerald-500" />
               )}
             </TabsTrigger>
+            <TabsTrigger value="stats">Stats</TabsTrigger>
             {currentPlayer.isAdmin && (
               <>
                 <TabsTrigger value="admin">Beschikbaarheid</TabsTrigger>
                 <TabsTrigger value="lineup-admin">Opstelling maken</TabsTrigger>
+                <TabsTrigger value="stats-admin">Stats invoeren</TabsTrigger>
               </>
             )}
           </TabsList>
@@ -159,6 +171,10 @@ export function SquadPlanner() {
 
           <TabsContent value="lineup">
             <LineupTab {...lineupTabProps} />
+          </TabsContent>
+
+          <TabsContent value="stats">
+            <StatsTab currentPlayer={currentPlayer} matchStats={matchStats} />
           </TabsContent>
 
           {currentPlayer.isAdmin && (
@@ -182,6 +198,16 @@ export function SquadPlanner() {
                   onSaveLineup={handleSaveLineup}
                   onPublishLineup={handlePublishLineup}
                   onUnpublishLineup={handleUnpublishLineup}
+                />
+              </TabsContent>
+
+              <TabsContent value="stats-admin">
+                <StatsManager
+                  events={weekEvents}
+                  weekStart={weekStart}
+                  onWeekChange={handleWeekChange}
+                  matchStats={matchStats}
+                  onSaveMatchStats={handleSaveMatchStats}
                 />
               </TabsContent>
             </>
