@@ -6,12 +6,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:migrate": "node --use-system-ca scripts/db-migrate.mjs",
+    "db:seed": "node --use-system-ca scripts/db-seed.mjs",
+    "db:setup": "node --use-system-ca scripts/db-setup.mjs"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.3.0",
     "@radix-ui/react-slot": "^1.2.5",
     "@radix-ui/react-tabs": "^1.1.14",
+    "@supabase/supabase-js": "^2.110.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.17.0",
@@ -22,8 +26,11 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
+    "postgres": "^3.4.9",
+    "prisma": "^7.8.0",
     "tailwindcss": "^4"
   }
 }
