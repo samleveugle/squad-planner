@@ -1,9 +1,16 @@
 "use server";
 
 import { isValidAvailabilityStatus, rowsToResponsesMap } from "@/lib/availability";
+import { requireAuthPlayer } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function getAvailabilityResponses() {
+  const auth = await requireAuthPlayer();
+
+  if (!auth.success) {
+    return { success: false, responses: {}, error: auth.error };
+  }
+
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase
@@ -27,9 +34,17 @@ export async function getAvailabilityResponses() {
   }
 }
 
-export async function saveAvailability(playerId, eventId, status) {
-  if (!playerId || !eventId) {
-    return { success: false, error: "Speler of event ontbreekt." };
+export async function saveAvailability(eventId, status) {
+  const auth = await requireAuthPlayer();
+
+  if (!auth.success) {
+    return { success: false, error: auth.error };
+  }
+
+  const playerId = auth.player.id;
+
+  if (!eventId) {
+    return { success: false, error: "Event ontbreekt." };
   }
 
   if (!isValidAvailabilityStatus(status)) {

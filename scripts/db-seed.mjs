@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 import { EVENTS, PLAYERS } from "../src/lib/mock-data.js";
+import { getPlayerEmail } from "../src/lib/players-db.js";
 
 import "./load-env.mjs";
 
@@ -24,7 +25,7 @@ function mapPlayer(player) {
     name: player.name,
     is_admin: player.isAdmin,
     is_squad_player: player.isSquadPlayer,
-    email: null,
+    email: getPlayerEmail(player.id),
     auth_user_id: null,
   };
 }

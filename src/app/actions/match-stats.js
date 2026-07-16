@@ -1,9 +1,16 @@
 "use server";
 
+import { requireAdminPlayer, requireAuthPlayer } from "@/lib/auth";
 import { rowsToMatchStatsMap, statsPayloadToRows } from "@/lib/stats-db";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function getMatchStats() {
+  const auth = await requireAuthPlayer();
+
+  if (!auth.success) {
+    return { success: false, matchStats: {}, error: auth.error };
+  }
+
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase
@@ -28,6 +35,12 @@ export async function getMatchStats() {
 }
 
 export async function saveMatchStats(eventId, statsPayload) {
+  const auth = await requireAdminPlayer();
+
+  if (!auth.success) {
+    return { success: false, error: auth.error };
+  }
+
   if (!eventId) {
     return { success: false, error: "Event ontbreekt." };
   }

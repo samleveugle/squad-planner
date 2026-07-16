@@ -29,14 +29,13 @@ import {
   EVENTS,
   getDefaultWeekStart,
   getEventsForWeek,
-  getPlayerById,
   getResponseKey,
   getWeekStart,
 } from "@/lib/mock-data";
 import { getUnseenPublishedLineups } from "@/lib/lineups";
 
-export function SquadPlanner() {
-  const [currentPlayerId, setCurrentPlayerId] = useState("senne");
+export function SquadPlanner({ currentPlayer }) {
+  const currentPlayerId = currentPlayer.id;
   const [responses, setResponses] = useState({});
   const [lineups, setLineups] = useState({});
   const [matchStats, setMatchStats] = useState({});
@@ -46,10 +45,9 @@ export function SquadPlanner() {
   const [dataLoading, setDataLoading] = useState(true);
   const [saveError, setSaveError] = useState(null);
 
-  const currentPlayer = getPlayerById(currentPlayerId);
   const weekEvents = getEventsForWeek(EVENTS, weekStart);
-  const showPlayerTabs = currentPlayer?.isSquadPlayer ?? false;
-  const showAdminTabs = currentPlayer?.isAdmin ?? false;
+  const showPlayerTabs = currentPlayer.isSquadPlayer ?? false;
+  const showAdminTabs = currentPlayer.isAdmin ?? false;
 
   const unseenLineupEvents = useMemo(
     () =>
@@ -109,7 +107,7 @@ export function SquadPlanner() {
     if (!showPlayerTabs && playerOnlyTabs.includes(activeTab)) {
       setActiveTab("calendar");
     }
-  }, [currentPlayerId, showPlayerTabs, activeTab]);
+  }, [currentPlayer.id, showPlayerTabs, activeTab]);
 
   function handleWeekChange(date) {
     setWeekStart(getWeekStart(date));
@@ -125,7 +123,7 @@ export function SquadPlanner() {
     }));
     setSaveError(null);
 
-    const result = await saveAvailability(currentPlayerId, eventId, status);
+    const result = await saveAvailability(eventId, status);
 
     if (!result.success) {
       setResponses((previous) => {
@@ -307,10 +305,7 @@ export function SquadPlanner() {
 
   return (
     <div className="min-h-full bg-muted/30">
-      <Header
-        currentPlayer={currentPlayer}
-        onPlayerChange={setCurrentPlayerId}
-      />
+      <Header currentPlayer={currentPlayer} />
 
       <main className="mx-auto max-w-3xl space-y-4 px-4 py-8">
         {saveError && (

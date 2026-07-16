@@ -1,9 +1,16 @@
 "use server";
 
+import { requireAdminPlayer, requireAuthPlayer } from "@/lib/auth";
 import { lineupToRow, rowsToLineupsMap } from "@/lib/lineups-db";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function getLineups() {
+  const auth = await requireAuthPlayer();
+
+  if (!auth.success) {
+    return { success: false, lineups: {}, error: auth.error };
+  }
+
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase.from("lineups").select("*");
@@ -26,6 +33,12 @@ export async function getLineups() {
 }
 
 export async function saveLineup(eventId, lineupData) {
+  const auth = await requireAdminPlayer();
+
+  if (!auth.success) {
+    return { success: false, error: auth.error };
+  }
+
   if (!eventId || !lineupData) {
     return { success: false, error: "Event of opstelling ontbreekt." };
   }
@@ -66,6 +79,12 @@ export async function saveLineup(eventId, lineupData) {
 }
 
 export async function publishLineup(eventId, lineupData) {
+  const auth = await requireAdminPlayer();
+
+  if (!auth.success) {
+    return { success: false, error: auth.error };
+  }
+
   if (!eventId || !lineupData) {
     return { success: false, error: "Event of opstelling ontbreekt." };
   }
@@ -97,6 +116,12 @@ export async function publishLineup(eventId, lineupData) {
 }
 
 export async function unpublishLineup(eventId) {
+  const auth = await requireAdminPlayer();
+
+  if (!auth.success) {
+    return { success: false, error: auth.error };
+  }
+
   if (!eventId) {
     return { success: false, error: "Event ontbreekt." };
   }
