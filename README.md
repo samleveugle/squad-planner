@@ -2,7 +2,7 @@
 
 Webapp voor onze voetbalploeg om trainingen en wedstrijden te plannen. Spelers geven aan of ze **aanwezig**, **twijfel** of **afwezig** zijn. Administrators stellen opstellingen samen, delen die wanneer ze klaar zijn, en vullen wedstrijd-stats in.
 
-> **Status:** Sessie 6b — beschikbaarheid wordt opgeslagen in Supabase. Opstellingen en stats zijn nog lokaal (Sessie 6c). Login komt in 6d.
+> **Status:** Sessie 6c — beschikbaarheid, opstellingen en stats worden opgeslagen in Supabase. Login komt in 6d.
 
 ## Functies
 
@@ -78,17 +78,26 @@ In Supabase → **Table Editor**:
 - `players` — ~31 rijen
 - `events` — ~80 rijen (trainingen + wedstrijden)
 
-De app laadt spelers/events nog uit mock-data. **Beschikbaarheid** (aanwezig/twijfel/afwezig) wordt wel in Supabase bewaard.
+De app laadt spelers/events nog uit mock-data. **Beschikbaarheid, opstellingen en stats** worden in Supabase bewaard.
 
-### Beschikbaarheid testen (Sessie 6b)
+### Testen (Sessie 6b–6c)
 
 1. `npm run dev` → open [http://localhost:3000](http://localhost:3000)
-2. Kies een speler (dropdown rechtsboven)
-3. Tab **Kalender** → klik **Aanwezig** bij een training/wedstrijd
-4. Ververs de pagina (F5) → keuze blijft staan
-5. Supabase → **Table Editor** → `availability` → nieuwe rij met `player_id`, `event_id`, `status`
 
-**Nog niet persistent:** opstellingen en stats (verdwijnen na refresh).
+**Beschikbaarheid:**
+2. Kies speler → tab **Kalender** → **Aanwezig** → F5 → keuze blijft
+3. Supabase → `availability`
+
+**Opstelling:**
+4. Kies admin → tab **Opstelling maken** → vul opstelling in → **Opslaan** → F5 → draft blijft
+5. **Publiceren** → F5 → speler ziet opstelling op tab **Opstelling**
+6. Supabase → `lineups`
+
+**Stats:**
+7. Tab **Stats invoeren** → goals/assists invullen → **Opslaan** → F5 → stats blijven
+8. Supabase → `match_stats`
+
+**Bij fouten:** rode balk bovenaan → check `.env.local` in projectroot (service_role key). Herstart `npm run dev`.
 
 ## Database-tabellen
 
@@ -97,8 +106,8 @@ De app laadt spelers/events nog uit mock-data. **Beschikbaarheid** (aanwezig/twi
 | `players` | Spelers + admins |
 | `events` | Trainingen en wedstrijden |
 | `availability` | Aanwezig/twijfel/afwezig per speler per event |
-| `lineups` | Opstellingen (leeg tot 6c) |
-| `match_stats` | Goals/assists (leeg tot 6c) |
+| `lineups` | Opstellingen per wedstrijd |
+| `match_stats` | Goals/assists per speler per wedstrijd |
 
 ## Projectstructuur
 
@@ -107,8 +116,11 @@ src/
 ├── lib/
 │   ├── mock-data.js       # Events/spelers (UI)
 │   ├── availability.js    # DB ↔ responses mapping
+│   ├── lineups-db.js      # DB ↔ lineups mapping
+│   ├── stats-db.js        # DB ↔ matchStats mapping
 │   ├── supabase/          # Supabase clients
 │   └── ...
+src/app/actions/           # Server Actions (availability, lineups, match-stats)
 scripts/
 ├── db-migrate.mjs
 └── db-seed.mjs
@@ -123,7 +135,7 @@ supabase/migrations/
 | 1–5 | Frontend, kalender, opstelling, stats | ✅ |
 | 6a | Supabase schema + seed | ✅ |
 | 6b | Beschikbaarheid opslaan in DB | ✅ |
-| 6c | Opstellingen + stats persistent | 🔜 |
+| 6c | Opstellingen + stats persistent | ✅ |
 | 6d | Login (Supabase Auth) | 🔜 |
 | 6e | Deploy Vercel | 🔜 |
 

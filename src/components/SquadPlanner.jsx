@@ -6,6 +6,16 @@ import {
   getAvailabilityResponses,
   saveAvailability,
 } from "@/app/actions/availability";
+import {
+  getLineups,
+  publishLineup as publishLineupAction,
+  saveLineup as saveLineupAction,
+  unpublishLineup as unpublishLineupAction,
+} from "@/app/actions/lineups";
+import {
+  getMatchStats,
+  saveMatchStats as saveMatchStatsAction,
+} from "@/app/actions/match-stats";
 import { AdminOverview } from "@/components/admin/AdminOverview";
 import { CalendarTab } from "@/components/calendar/CalendarTab";
 import { Header } from "@/components/layout/Header";
@@ -28,13 +38,13 @@ import { getUnseenPublishedLineups } from "@/lib/lineups";
 export function SquadPlanner() {
   const [currentPlayerId, setCurrentPlayerId] = useState("senne");
   const [responses, setResponses] = useState({});
-  const [responsesLoading, setResponsesLoading] = useState(true);
-  const [availabilityError, setAvailabilityError] = useState(null);
   const [lineups, setLineups] = useState({});
   const [matchStats, setMatchStats] = useState({});
   const [seenLineups, setSeenLineups] = useState({});
   const [weekStart, setWeekStart] = useState(() => getDefaultWeekStart(EVENTS));
   const [activeTab, setActiveTab] = useState("calendar");
+  const [dataLoading, setDataLoading] = useState(true);
+  const [saveError, setSaveError] = useState(null);
 
   const currentPlayer = getPlayerById(currentPlayerId);
   const weekEvents = getEventsForWeek(EVENTS, weekStart);
@@ -50,25 +60,44 @@ export function SquadPlanner() {
   useEffect(() => {
     let cancelled = false;
 
-    async function loadAvailability() {
-      setResponsesLoading(true);
-      const result = await getAvailabilityResponses();
+    async function loadPersistedData() {
+      setDataLoading(true);
+
+      const [availabilityResult, lineupsResult, matchStatsResult] = await Promise.all([
+        getAvailabilityResponses(),
+        getLineups(),
+        getMatchStats(),
+      ]);
 
       if (cancelled) {
         return;
       }
 
-      if (result.success) {
-        setResponses(result.responses);
-        setAvailabilityError(null);
+      const errors = [];
+
+      if (availabilityResult.success) {
+        setResponses(availabilityResult.responses);
       } else {
-        setAvailabilityError(result.error);
+        errors.push(availabilityResult.error);
       }
 
-      setResponsesLoading(false);
+      if (lineupsResult.success) {
+        setLineups(lineupsResult.lineups);
+      } else {
+        errors.push(lineupsResult.error);
+      }
+
+      if (matchStatsResult.success) {
+        setMatchStats(matchStatsResult.matchStats);
+      } else {
+        errors.push(matchStatsResult.error);
+      }
+
+      setSaveError(errors.length > 0 ? errors.join(" · ") : null);
+      setDataLoading(false);
     }
 
-    loadAvailability();
+    loadPersistedData();
 
     return () => {
       cancelled = true;
@@ -94,7 +123,7 @@ export function SquadPlanner() {
       ...previous,
       [responseKey]: status,
     }));
-    setAvailabilityError(null);
+    setSaveError(null);
 
     const result = await saveAvailability(currentPlayerId, eventId, status);
 
@@ -110,7 +139,7 @@ export function SquadPlanner() {
 
         return next;
       });
-      setAvailabilityError(result.error);
+      setSaveError(result.error);
     }
   }
 
@@ -121,49 +150,129 @@ export function SquadPlanner() {
     }));
   }, []);
 
-  function handleSaveLineup(eventId, lineupData) {
+  async function handleSaveLineup(eventId, lineupData) {
+    const previousLineup = lineups[eventId];
+    const nextLineup = {
+      ...lineupData,
+      published: previousLineup?.published ?? false,
+      publishedAt: previousLineup?.publishedAt ?? null,
+    };
+
     setLineups((previous) => ({
       ...previous,
-      [eventId]: {
-        ...lineupData,
-        published: previous[eventId]?.published ?? false,
-        publishedAt: previous[eventId]?.publishedAt ?? null,
-      },
+      [eventId]: nextLineup,
     }));
+    setSaveError(null);
+
+    const result = await saveLineupAction(eventId, nextLineup);
+
+    if (!result.success) {
+      setLineups((previous) => {
+        const next = { ...previous };
+
+        if (previousLineup === undefined) {
+          delete next[eventId];
+        } else {
+          next[eventId] = previousLineup;
+        }
+
+        return next;
+      });
+      setSaveError(result.error);
+    }
   }
 
-  function handlePublishLineup(eventId, lineupData) {
+  async function handlePublishLineup(eventId, lineupData) {
+    const previousLineup = lineups[eventId];
+    const publishedAt = new Date().toISOString();
+    const nextLineup = {
+      ...lineupData,
+      published: true,
+      publishedAt,
+    };
+
     setLineups((previous) => ({
       ...previous,
-      [eventId]: {
-        ...lineupData,
-        published: true,
-        publishedAt: new Date().toISOString(),
-      },
+      [eventId]: nextLineup,
     }));
+    setSaveError(null);
 
-    setSeenLineups((previous) => {
-      const next = { ...previous };
-      delete next[eventId];
-      return next;
-    });
+    const result = await publishLineupAction(eventId, lineupData);
+
+    if (!result.success) {
+      setLineups((previous) => {
+        const next = { ...previous };
+
+        if (previousLineup === undefined) {
+          delete next[eventId];
+        } else {
+          next[eventId] = previousLineup;
+        }
+
+        return next;
+      });
+      setSaveError(result.error);
+    } else {
+      setSeenLineups((previous) => {
+        const next = { ...previous };
+        delete next[eventId];
+        return next;
+      });
+    }
   }
 
-  function handleUnpublishLineup(eventId) {
+  async function handleUnpublishLineup(eventId) {
+    const previousLineup = lineups[eventId];
+
+    if (!previousLineup) {
+      return;
+    }
+
     setLineups((previous) => ({
       ...previous,
       [eventId]: {
-        ...previous[eventId],
+        ...previousLineup,
         published: false,
       },
     }));
+    setSaveError(null);
+
+    const result = await unpublishLineupAction(eventId);
+
+    if (!result.success) {
+      setLineups((previous) => ({
+        ...previous,
+        [eventId]: previousLineup,
+      }));
+      setSaveError(result.error);
+    }
   }
 
-  function handleSaveMatchStats(eventId, statsPayload) {
+  async function handleSaveMatchStats(eventId, statsPayload) {
+    const previousStats = matchStats[eventId];
+
     setMatchStats((previous) => ({
       ...previous,
       [eventId]: statsPayload,
     }));
+    setSaveError(null);
+
+    const result = await saveMatchStatsAction(eventId, statsPayload);
+
+    if (!result.success) {
+      setMatchStats((previous) => {
+        const next = { ...previous };
+
+        if (previousStats === undefined) {
+          delete next[eventId];
+        } else {
+          next[eventId] = previousStats;
+        }
+
+        return next;
+      });
+      setSaveError(result.error);
+    }
   }
 
   function handleDismissNotifications() {
@@ -182,7 +291,7 @@ export function SquadPlanner() {
     currentPlayerId,
     responses,
     onAvailabilityChange: handleAvailabilityChange,
-    availabilityDisabled: responsesLoading,
+    availabilityDisabled: dataLoading,
     lineups,
     onLineupViewed: markLineupSeen,
   };
@@ -204,17 +313,17 @@ export function SquadPlanner() {
       />
 
       <main className="mx-auto max-w-3xl space-y-4 px-4 py-8">
-        {availabilityError && (
+        {saveError && (
           <div
             role="alert"
             className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200"
           >
-            {availabilityError}
+            {saveError}
           </div>
         )}
 
-        {responsesLoading && (
-          <p className="text-sm text-muted-foreground">Beschikbaarheid laden...</p>
+        {dataLoading && (
+          <p className="text-sm text-muted-foreground">Gegevens laden...</p>
         )}
 
         {showPlayerTabs && (
