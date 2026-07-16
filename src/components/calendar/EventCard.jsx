@@ -15,6 +15,7 @@ export function EventCard({
   event,
   value,
   onChange,
+  availabilityDisabled = false,
   responses,
   currentPlayerId,
   lineups,
@@ -50,7 +51,11 @@ export function EventCard({
       <CardContent className="space-y-4">
         <div>
           <p className="mb-3 text-sm text-muted-foreground">Jouw beschikbaarheid</p>
-          <AvailabilityPicker value={value} onChange={onChange} />
+          <AvailabilityPicker
+            value={value}
+            onChange={onChange}
+            disabled={availabilityDisabled}
+          />
         </div>
 
         <EventTeamSummary

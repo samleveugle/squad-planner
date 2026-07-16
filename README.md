@@ -2,7 +2,7 @@
 
 Webapp voor onze voetbalploeg om trainingen en wedstrijden te plannen. Spelers geven aan of ze **aanwezig**, **twijfel** of **afwezig** zijn. Administrators stellen opstellingen samen, delen die wanneer ze klaar zijn, en vullen wedstrijd-stats in.
 
-> **Status:** Sessie 6a — Supabase database + seed. De app gebruikt de database **nog niet** (mock data in de UI). Login en persistente opslag komen in volgende sessies.
+> **Status:** Sessie 6b — beschikbaarheid wordt opgeslagen in Supabase. Opstellingen en stats zijn nog lokaal (Sessie 6c). Login komt in 6d.
 
 ## Functies
 
@@ -52,7 +52,7 @@ Kopieer `.env.example` en vul in:
 | `SUPABASE_SERVICE_ROLE_KEY` | Project Settings → API → service_role |
 | `SUPABASE_DB_URL` | Project Settings → Database → Connection string → URI |
 
-Bij `SUPABASE_DB_URL`: vervang `[YOUR-PASSWORD]` door het wachtwoord dat je bij project-aanmaak koos.
+Bij `SUPABASE_DB_URL`: vervang `[YOUR-PASSWORD]` door het wachtwoord dat je bij project-aanmaak koos (alleen nodig voor `npm run db:migrate`).
 
 ### 2. Tabellen aanmaken + data laden
 
@@ -60,7 +60,7 @@ Bij `SUPABASE_DB_URL`: vervang `[YOUR-PASSWORD]` door het wachtwoord dat je bij 
 npm run db:setup
 ```
 
-> **Windows/Node SSL:** de db-scripts gebruiken `node --use-system-ca` zodat Node.js HTTPS-certificaten van Supabase vertrouwt.
+> **Windows/Node SSL:** db-scripts gebruiken `node --use-system-ca`. De app zelf activeert systeemcertificaten via `node-ssl.js` (geen extra flags nodig voor `npm run dev`).
 
 Of apart:
 
@@ -78,7 +78,17 @@ In Supabase → **Table Editor**:
 - `players` — ~31 rijen
 - `events` — ~80 rijen (trainingen + wedstrijden)
 
-De app zelf werkt nog met mock data tot Sessie 6b.
+De app laadt spelers/events nog uit mock-data. **Beschikbaarheid** (aanwezig/twijfel/afwezig) wordt wel in Supabase bewaard.
+
+### Beschikbaarheid testen (Sessie 6b)
+
+1. `npm run dev` → open [http://localhost:3000](http://localhost:3000)
+2. Kies een speler (dropdown rechtsboven)
+3. Tab **Kalender** → klik **Aanwezig** bij een training/wedstrijd
+4. Ververs de pagina (F5) → keuze blijft staan
+5. Supabase → **Table Editor** → `availability` → nieuwe rij met `player_id`, `event_id`, `status`
+
+**Nog niet persistent:** opstellingen en stats (verdwijnen na refresh).
 
 ## Database-tabellen
 
@@ -86,7 +96,7 @@ De app zelf werkt nog met mock data tot Sessie 6b.
 |-------|--------|
 | `players` | Spelers + admins |
 | `events` | Trainingen en wedstrijden |
-| `availability` | Aanwezig/twijfel/afwezig (leeg tot 6b) |
+| `availability` | Aanwezig/twijfel/afwezig per speler per event |
 | `lineups` | Opstellingen (leeg tot 6c) |
 | `match_stats` | Goals/assists (leeg tot 6c) |
 
@@ -95,8 +105,9 @@ De app zelf werkt nog met mock data tot Sessie 6b.
 ```
 src/
 ├── lib/
-│   ├── mock-data.js       # UI gebruikt dit nog
-│   ├── supabase/          # Supabase clients (voor later)
+│   ├── mock-data.js       # Events/spelers (UI)
+│   ├── availability.js    # DB ↔ responses mapping
+│   ├── supabase/          # Supabase clients
 │   └── ...
 scripts/
 ├── db-migrate.mjs
@@ -111,7 +122,7 @@ supabase/migrations/
 |--------|-----------|--------|
 | 1–5 | Frontend, kalender, opstelling, stats | ✅ |
 | 6a | Supabase schema + seed | ✅ |
-| 6b | Beschikbaarheid opslaan in DB | 🔜 |
+| 6b | Beschikbaarheid opslaan in DB | ✅ |
 | 6c | Opstellingen + stats persistent | 🔜 |
 | 6d | Login (Supabase Auth) | 🔜 |
 | 6e | Deploy Vercel | 🔜 |

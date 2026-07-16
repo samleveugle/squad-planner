@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import {
+  getAvailabilityResponses,
+  saveAvailability,
+} from "@/app/actions/availability";
 import { AdminOverview } from "@/components/admin/AdminOverview";
 import { CalendarTab } from "@/components/calendar/CalendarTab";
 import { Header } from "@/components/layout/Header";
@@ -24,6 +28,8 @@ import { getUnseenPublishedLineups } from "@/lib/lineups";
 export function SquadPlanner() {
   const [currentPlayerId, setCurrentPlayerId] = useState("senne");
   const [responses, setResponses] = useState({});
+  const [responsesLoading, setResponsesLoading] = useState(true);
+  const [availabilityError, setAvailabilityError] = useState(null);
   const [lineups, setLineups] = useState({});
   const [matchStats, setMatchStats] = useState({});
   const [seenLineups, setSeenLineups] = useState({});
@@ -42,6 +48,34 @@ export function SquadPlanner() {
   );
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadAvailability() {
+      setResponsesLoading(true);
+      const result = await getAvailabilityResponses();
+
+      if (cancelled) {
+        return;
+      }
+
+      if (result.success) {
+        setResponses(result.responses);
+        setAvailabilityError(null);
+      } else {
+        setAvailabilityError(result.error);
+      }
+
+      setResponsesLoading(false);
+    }
+
+    loadAvailability();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     const playerOnlyTabs = ["lineup", "stats"];
     if (!showPlayerTabs && playerOnlyTabs.includes(activeTab)) {
       setActiveTab("calendar");
@@ -52,13 +86,32 @@ export function SquadPlanner() {
     setWeekStart(getWeekStart(date));
   }
 
-  function handleAvailabilityChange(eventId, status) {
+  async function handleAvailabilityChange(eventId, status) {
     const responseKey = getResponseKey(currentPlayerId, eventId);
+    const previousStatus = responses[responseKey];
 
     setResponses((previous) => ({
       ...previous,
       [responseKey]: status,
     }));
+    setAvailabilityError(null);
+
+    const result = await saveAvailability(currentPlayerId, eventId, status);
+
+    if (!result.success) {
+      setResponses((previous) => {
+        const next = { ...previous };
+
+        if (previousStatus === undefined) {
+          delete next[responseKey];
+        } else {
+          next[responseKey] = previousStatus;
+        }
+
+        return next;
+      });
+      setAvailabilityError(result.error);
+    }
   }
 
   const markLineupSeen = useCallback((eventId) => {
@@ -129,6 +182,7 @@ export function SquadPlanner() {
     currentPlayerId,
     responses,
     onAvailabilityChange: handleAvailabilityChange,
+    availabilityDisabled: responsesLoading,
     lineups,
     onLineupViewed: markLineupSeen,
   };
@@ -150,6 +204,19 @@ export function SquadPlanner() {
       />
 
       <main className="mx-auto max-w-3xl space-y-4 px-4 py-8">
+        {availabilityError && (
+          <div
+            role="alert"
+            className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200"
+          >
+            {availabilityError}
+          </div>
+        )}
+
+        {responsesLoading && (
+          <p className="text-sm text-muted-foreground">Beschikbaarheid laden...</p>
+        )}
+
         {showPlayerTabs && (
           <LineupNotificationBanner
             unseenEvents={unseenLineupEvents}

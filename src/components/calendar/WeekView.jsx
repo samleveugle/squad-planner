@@ -9,6 +9,7 @@ export function WeekView({
   currentPlayerId,
   responses,
   onAvailabilityChange,
+  availabilityDisabled = false,
   lineups,
   onLineupViewed,
 }) {
@@ -31,6 +32,7 @@ export function WeekView({
                 event={event}
                 value={responses[responseKey] ?? null}
                 onChange={(status) => onAvailabilityChange(event.id, status)}
+                availabilityDisabled={availabilityDisabled}
                 responses={responses}
                 currentPlayerId={currentPlayerId}
                 lineups={lineups}

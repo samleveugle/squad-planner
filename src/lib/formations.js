@@ -65,6 +65,7 @@ export const FORMATIONS = {
   },
 };
 
+
 export const DEFAULT_FORMATION = "4-3-3";
 
 export function getFormationIds() {
