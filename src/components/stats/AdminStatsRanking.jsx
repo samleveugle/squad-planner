@@ -4,11 +4,13 @@ import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { usePlayers } from "@/context/PlayersContext";
 import { getSeasonRanking } from "@/lib/stats";
 
 export function AdminStatsRanking({ matchStats }) {
   const [sortBy, setSortBy] = useState("goals");
-  const ranking = getSeasonRanking(matchStats, sortBy);
+  const { getSquadPlayers } = usePlayers();
+  const ranking = getSeasonRanking(matchStats, getSquadPlayers(), sortBy);
 
   return (
     <div className="space-y-4">

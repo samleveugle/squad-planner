@@ -1,6 +1,8 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { getFormation } from "@/lib/formations";
-import { getPlayerName } from "@/lib/lineups";
+import { usePlayers } from "@/context/PlayersContext";
 
 export function LineupField({
   formationId,
@@ -8,6 +10,7 @@ export function LineupField({
   compact = false,
   highlightPlayerId = null,
 }) {
+  const { getPlayerName } = usePlayers();
   const formation = getFormation(formationId);
 
   return (

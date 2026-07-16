@@ -19,6 +19,7 @@ import {
   getFormation,
   migratePositions,
 } from "@/lib/formations";
+import { usePlayers } from "@/context/PlayersContext";
 import {
   createEmptyLineup,
   formatPublishedAt,
@@ -40,6 +41,7 @@ function compactArray(values) {
 }
 
 export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish, onUnpublish }) {
+  const { players } = usePlayers();
   const normalizedSaved = normalizeLineup(savedLineup);
   const [formation, setFormation] = useState(normalizedSaved.formation);
   const [positions, setPositions] = useState(normalizedSaved.positions);
@@ -55,7 +57,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
     setStaff(toFilledArray(lineup.staff, MAX_STAFF));
   }, [savedLineup, event.id]);
 
-  const eligiblePlayers = getEligiblePlayers(event.id, responses);
+  const eligiblePlayers = getEligiblePlayers(event.id, responses, players);
   const formationData = getFormation(formation);
   const filledCount = countFilledPositions(positions);
   const isFieldComplete = filledCount === formationData.positions.length;

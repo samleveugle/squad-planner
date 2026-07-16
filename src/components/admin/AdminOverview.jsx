@@ -1,6 +1,9 @@
+"use client";
+
 import { AvailabilityBadge } from "@/components/availability/AvailabilityBadge";
 import { PlayerNameList } from "@/components/availability/PlayerNameList";
 import { WeekNavigator } from "@/components/calendar/WeekNavigator";
+import { usePlayers } from "@/context/PlayersContext";
 import {
   Card,
   CardContent,
@@ -12,11 +15,11 @@ import {
   AVAILABILITY,
   formatEventDate,
   formatEventTime,
-  getEventResponseSummary,
   getEventTitle,
 } from "@/lib/mock-data";
 
 function EventAdminCard({ event, responses }) {
+  const { getEventResponseSummary } = usePlayers();
   const { present, doubt, absent, unanswered } = getEventResponseSummary(
     event.id,
     responses

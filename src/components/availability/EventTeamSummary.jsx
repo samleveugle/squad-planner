@@ -1,8 +1,11 @@
+"use client";
+
 import { AvailabilityBadge } from "@/components/availability/AvailabilityBadge";
 import { PlayerNameList } from "@/components/availability/PlayerNameList";
-import { getEventResponseSummary } from "@/lib/mock-data";
+import { usePlayers } from "@/context/PlayersContext";
 
 export function EventTeamSummary({ eventId, responses, currentPlayerId }) {
+  const { getEventResponseSummary } = usePlayers();
   const { present, doubt, absent, unanswered } = getEventResponseSummary(
     eventId,
     responses

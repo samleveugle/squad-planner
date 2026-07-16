@@ -9,15 +9,15 @@ import {
 import {
   formatEventDate,
   getEventTitle,
-} from "@/lib/mock-data";
+} from "@/lib/events";
 import {
   getPlayerMatchHistory,
   getSeasonTotals,
 } from "@/lib/stats";
 
-export function PlayerStatsView({ playerId, playerName, matchStats }) {
+export function PlayerStatsView({ playerId, playerName, matchStats, events }) {
   const totals = getSeasonTotals(matchStats, playerId);
-  const history = getPlayerMatchHistory(matchStats, playerId);
+  const history = getPlayerMatchHistory(matchStats, playerId, events);
 
   return (
     <div className="space-y-4">

@@ -1,5 +1,3 @@
-import { EVENTS, getPlayerById, SQUAD_PLAYERS } from "@/lib/mock-data";
-
 export function createEmptyPlayerStats() {
   return { goals: 0, assists: 0 };
 }
@@ -36,11 +34,11 @@ export function getSeasonTotals(matchStats, playerId) {
   return { goals, assists };
 }
 
-export function getMatchEvents(events = EVENTS) {
+export function getMatchEvents(events) {
   return events.filter((event) => event.type === "match");
 }
 
-export function getPlayerMatchHistory(matchStats, playerId, events = EVENTS) {
+export function getPlayerMatchHistory(matchStats, playerId, events) {
   return getMatchEvents(events)
     .map((event) => ({
       event,
@@ -50,8 +48,8 @@ export function getPlayerMatchHistory(matchStats, playerId, events = EVENTS) {
     .sort((a, b) => b.event.date.localeCompare(a.event.date));
 }
 
-export function getSeasonRanking(matchStats, sortBy = "goals") {
-  const ranking = SQUAD_PLAYERS.map((player) => ({
+export function getSeasonRanking(matchStats, squadPlayers, sortBy = "goals") {
+  const ranking = squadPlayers.map((player) => ({
     player,
     ...getSeasonTotals(matchStats, player.id),
   }));
@@ -95,15 +93,10 @@ export function buildStatsPayload(playerStatsMap) {
 
 export function createDraftFromSaved(matchStats, eventId, playerIds) {
   const draft = {};
-  const ids = playerIds ?? SQUAD_PLAYERS.map((player) => player.id);
 
-  for (const playerId of ids) {
+  for (const playerId of playerIds) {
     draft[playerId] = getPlayerMatchStats(matchStats, eventId, playerId);
   }
 
   return draft;
-}
-
-export function getPlayerName(playerId) {
-  return getPlayerById(playerId)?.name ?? "Onbekend";
 }

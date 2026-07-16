@@ -6,9 +6,8 @@ import { CalendarViewToggle } from "@/components/calendar/CalendarViewToggle";
 import { MonthView } from "@/components/calendar/MonthView";
 import { WeekView } from "@/components/calendar/WeekView";
 import { getDefaultMonth } from "@/lib/calendar";
-import { EVENTS } from "@/lib/mock-data";
 
-export function CalendarTab({ weekViewProps, onWeekChange }) {
+export function CalendarTab({ events, weekViewProps, onWeekChange }) {
   const [calendarView, setCalendarView] = useState("week");
   const [monthYear, setMonthYear] = useState(() => getDefaultMonth());
 
@@ -25,7 +24,7 @@ export function CalendarTab({ weekViewProps, onWeekChange }) {
         <WeekView {...weekViewProps} />
       ) : (
         <MonthView
-          events={EVENTS}
+          events={events}
           monthYear={monthYear}
           onMonthChange={setMonthYear}
           onDaySelect={handleDaySelect}

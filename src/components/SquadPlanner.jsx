@@ -16,7 +16,10 @@ import {
   getMatchStats,
   saveMatchStats as saveMatchStatsAction,
 } from "@/app/actions/match-stats";
+import { getEvents } from "@/app/actions/events";
 import { AdminOverview } from "@/components/admin/AdminOverview";
+import { EventsManager } from "@/components/admin/EventsManager";
+import { PlayersManager } from "@/components/admin/PlayersManager";
 import { CalendarTab } from "@/components/calendar/CalendarTab";
 import { Header } from "@/components/layout/Header";
 import { LineupManager } from "@/components/lineup/LineupManager";
@@ -25,34 +28,37 @@ import { LineupTab } from "@/components/lineup/LineupTab";
 import { StatsManager } from "@/components/stats/StatsManager";
 import { StatsTab } from "@/components/stats/StatsTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PlayersProvider } from "@/context/PlayersContext";
+import { getPlayers } from "@/app/actions/players";
 import {
-  EVENTS,
   getDefaultWeekStart,
   getEventsForWeek,
-  getResponseKey,
   getWeekStart,
-} from "@/lib/mock-data";
+} from "@/lib/events";
+import { getResponseKey } from "@/lib/mock-data";
 import { getUnseenPublishedLineups } from "@/lib/lineups";
 
 export function SquadPlanner({ currentPlayer }) {
   const currentPlayerId = currentPlayer.id;
+  const [players, setPlayers] = useState([]);
+  const [events, setEvents] = useState([]);
   const [responses, setResponses] = useState({});
   const [lineups, setLineups] = useState({});
   const [matchStats, setMatchStats] = useState({});
   const [seenLineups, setSeenLineups] = useState({});
-  const [weekStart, setWeekStart] = useState(() => getDefaultWeekStart(EVENTS));
+  const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
   const [activeTab, setActiveTab] = useState("calendar");
   const [dataLoading, setDataLoading] = useState(true);
   const [saveError, setSaveError] = useState(null);
 
-  const weekEvents = getEventsForWeek(EVENTS, weekStart);
+  const weekEvents = getEventsForWeek(events, weekStart);
   const showPlayerTabs = currentPlayer.isSquadPlayer ?? false;
   const showAdminTabs = currentPlayer.isAdmin ?? false;
 
   const unseenLineupEvents = useMemo(
     () =>
-      showPlayerTabs ? getUnseenPublishedLineups(EVENTS, lineups, seenLineups) : [],
-    [lineups, seenLineups, showPlayerTabs]
+      showPlayerTabs ? getUnseenPublishedLineups(events, lineups, seenLineups) : [],
+    [events, lineups, seenLineups, showPlayerTabs]
   );
 
   useEffect(() => {
@@ -61,17 +67,33 @@ export function SquadPlanner({ currentPlayer }) {
     async function loadPersistedData() {
       setDataLoading(true);
 
-      const [availabilityResult, lineupsResult, matchStatsResult] = await Promise.all([
-        getAvailabilityResponses(),
-        getLineups(),
-        getMatchStats(),
-      ]);
+      const [playersResult, eventsResult, availabilityResult, lineupsResult, matchStatsResult] =
+        await Promise.all([
+          getPlayers(),
+          getEvents(),
+          getAvailabilityResponses(),
+          getLineups(),
+          getMatchStats(),
+        ]);
 
       if (cancelled) {
         return;
       }
 
       const errors = [];
+
+      if (playersResult.success) {
+        setPlayers(playersResult.players);
+      } else {
+        errors.push(playersResult.error);
+      }
+
+      if (eventsResult.success) {
+        setEvents(eventsResult.events);
+        setWeekStart(getDefaultWeekStart(eventsResult.events));
+      } else {
+        errors.push(eventsResult.error);
+      }
 
       if (availabilityResult.success) {
         setResponses(availabilityResult.responses);
@@ -304,10 +326,11 @@ export function SquadPlanner({ currentPlayer }) {
   };
 
   return (
-    <div className="min-h-full bg-muted/30">
-      <Header currentPlayer={currentPlayer} />
+    <PlayersProvider players={players}>
+      <div className="min-h-full bg-muted/30">
+        <Header currentPlayer={currentPlayer} />
 
-      <main className="mx-auto max-w-3xl space-y-4 px-4 py-8">
+        <main className="mx-auto max-w-3xl space-y-4 px-4 py-8">
         {saveError && (
           <div
             role="alert"
@@ -336,6 +359,8 @@ export function SquadPlanner({ currentPlayer }) {
             {showAdminTabs && (
               <>
                 <TabsTrigger value="admin">Beschikbaarheid</TabsTrigger>
+                <TabsTrigger value="players-admin">Spelers</TabsTrigger>
+                <TabsTrigger value="events-admin">Agenda</TabsTrigger>
                 <TabsTrigger value="lineup-admin">Opstelling maken</TabsTrigger>
               </>
             )}
@@ -358,6 +383,7 @@ export function SquadPlanner({ currentPlayer }) {
 
           <TabsContent value="calendar">
             <CalendarTab
+              events={events}
               weekViewProps={weekViewProps}
               onWeekChange={handleWeekChange}
             />
@@ -371,7 +397,11 @@ export function SquadPlanner({ currentPlayer }) {
 
           {showPlayerTabs && (
             <TabsContent value="stats">
-              <StatsTab currentPlayer={currentPlayer} matchStats={matchStats} />
+              <StatsTab
+                currentPlayer={currentPlayer}
+                matchStats={matchStats}
+                events={events}
+              />
             </TabsContent>
           )}
 
@@ -383,6 +413,19 @@ export function SquadPlanner({ currentPlayer }) {
                   weekStart={weekStart}
                   onWeekChange={handleWeekChange}
                   responses={responses}
+                />
+              </TabsContent>
+
+              <TabsContent value="players-admin">
+                <PlayersManager players={players} onPlayersChange={setPlayers} />
+              </TabsContent>
+
+              <TabsContent value="events-admin">
+                <EventsManager
+                  events={events}
+                  onEventsChange={setEvents}
+                  weekStart={weekStart}
+                  onWeekChange={handleWeekChange}
                 />
               </TabsContent>
 
@@ -414,5 +457,6 @@ export function SquadPlanner({ currentPlayer }) {
         </Tabs>
       </main>
     </div>
+    </PlayersProvider>
   );
 }

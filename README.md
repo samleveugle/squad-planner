@@ -2,7 +2,7 @@
 
 Webapp voor onze voetbalploeg om trainingen en wedstrijden te plannen. Spelers geven aan of ze **aanwezig**, **twijfel** of **afwezig** zijn. Administrators stellen opstellingen samen, delen die wanneer ze klaar zijn, en vullen wedstrijd-stats in.
 
-> **Status:** Sessie 6d — magic-link login via Supabase Auth. Data persistent in Supabase. Volgende stap: Vercel deploy (6e).
+> **Status:** Sessie 6e-b — admins beheren trainingen/wedstrijden in de database. Volgende stap: Vercel deploy (6e-c).
 
 ## Functies
 
@@ -11,8 +11,20 @@ Webapp voor onze voetbalploeg om trainingen en wedstrijden te plannen. Spelers g
 - Alleen spelers met e-mail in de database kunnen inloggen
 - Rollen uit database: admin / speler tabs
 
+### Admin — spelers
+- Tab **Spelers** (alleen admins): lijst, toevoegen, bewerken, verwijderen
+- E-mail instellen voor magic-link login
+- Rollen: admin ja/nee, ploegspeler ja/nee
+- Spelerslijsten in de UI komen uit Supabase (niet meer uit mock-data)
+
+### Admin — agenda
+- Tab **Agenda** (alleen admins): trainingen en wedstrijden beheren
+- Toevoegen, bewerken, verwijderen (met bevestiging)
+- Kalender en alle tabs gebruiken events uit Supabase
+- Initiële events via `npm run db:seed` (mock-data generator)
+
 ### Kalender & beschikbaarheid
-- Seizoenskalender (training do 20u30, thuis/uit om de 2 zondagen)
+- Seizoenskalender uit database
 - **Week-view** + **Maand-view**
 - Beschikbaarheid opgeslagen in Supabase
 
@@ -69,11 +81,31 @@ Draai **`npm run db:seed`** opnieuw na e-mail-wijzigingen (zet Sam's e-mail in d
    - (later voor 6e) `https://jouw-app.vercel.app/auth/callback`
 
 ### 3. E-mail koppelen aan speler
-- Testaccount **Sam:** `leveuglesam98@gmail.com` (staat in `src/lib/players-db.js`)
-- Draai `npm run db:seed` om e-mail in `players`-tabel te zetten
-- Of handmatig: Supabase → **Table Editor** → `players` → rij `sam` → kolom `email`
+- Testaccount **Sam:** `leveuglesam98@gmail.com` (via seed of admin-tab **Spelers**)
+- Draai `npm run db:seed` voor initiële spelers + Sam's e-mail
+- Of: inloggen als admin → tab **Spelers** → speler bewerken → e-mail invullen
 
-Teamleden toevoegen: zet hun e-mail in `players.email` (Table Editor of uitbreiden `PLAYER_EMAILS` in `players-db.js` + seed).
+Teamleden toevoegen: tab **Spelers** (admin) of handmatig in Supabase Table Editor.
+
+## Spelers beheren testen (6e-a)
+
+1. `npm run dev`
+2. Log in als **Sam** (`leveuglesam98@gmail.com`)
+3. Open tab **Spelers**
+4. **Speler toevoegen:** naam, optioneel e-mail, vink admin/ploegspeler aan
+5. Log uit → probeer in te loggen met het nieuwe e-mailadres
+6. **Bewerken / verwijderen** via dezelfde tab (verwijderen vraagt bevestiging)
+
+## Agenda beheren testen (6e-b)
+
+1. `npm run dev` — zorg dat events in DB staan (`npm run db:seed` indien nodig)
+2. Log in als **Sam** (admin)
+3. Tab **Agenda** → blader met week-navigator
+4. **Event toevoegen:** kies training of wedstrijd, datum, locatie, optioneel tijd/tegenstander
+5. Tab **Kalender** → nieuw event moet zichtbaar zijn in de juiste week
+6. Vul **beschikbaarheid** in op dat event (tab Kalender)
+7. Terug naar **Agenda** → wedstrijd **bewerken** (tegenstander invullen)
+8. Event **verwijderen** → bevestig → verdwijnt uit Kalender
 
 ## Login testen
 
@@ -96,7 +128,9 @@ Teamleden toevoegen: zet hun e-mail in `players.email` (Table Editor of uitbreid
 |--------|-----------|--------|
 | 6a–6c | Database + persistent data | ✅ |
 | 6d | Magic-link login | ✅ |
-| 6e | Deploy Vercel | 🔜 |
+| 6e-a | Admin spelers beheren | ✅ |
+| 6e-b | Admin events beheren | ✅ |
+| 6e-c | Deploy Vercel | 🔜 |
 
 ## Git workflow
 

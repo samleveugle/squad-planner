@@ -1,3 +1,5 @@
+import { parseDate, toDateString } from "./events.js";
+
 export const AVAILABILITY = {
   present: { label: "Aanwezig", shortLabel: "Aanwezig" },
   doubt: { label: "Twijfel", shortLabel: "Twijfel" },
@@ -73,17 +75,6 @@ export const PLAYERS = [
 
 export const SQUAD_PLAYERS = PLAYERS.filter((player) => player.isSquadPlayer);
 
-function toDateString(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function parseDate(dateString) {
-  return new Date(`${dateString}T12:00:00`);
-}
-
 function generateSeasonEvents() {
   const events = [];
   const seasonStart = parseDate(SEASON.start);
@@ -144,121 +135,20 @@ function generateSeasonEvents() {
   return events.sort((a, b) => a.date.localeCompare(b.date));
 }
 
+/** Alleen voor db:seed — runtime laadt events uit Supabase */
 export const EVENTS = generateSeasonEvents();
-
-export function getWeekStart(date) {
-  const weekStart = new Date(date);
-  const day = weekStart.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  weekStart.setDate(weekStart.getDate() + diff);
-  weekStart.setHours(12, 0, 0, 0);
-  return weekStart;
-}
-
-export function addWeeks(date, weeks) {
-  const result = new Date(date);
-  result.setDate(result.getDate() + weeks * 7);
-  return result;
-}
-
-export function getEventsForWeek(events, weekStart) {
-  const weekEnd = addWeeks(weekStart, 1);
-  weekEnd.setDate(weekEnd.getDate() - 1);
-
-  const weekStartString = toDateString(weekStart);
-  const weekEndString = toDateString(weekEnd);
-
-  return events.filter(
-    (event) => event.date >= weekStartString && event.date <= weekEndString
-  );
-}
-
-export function formatWeekRange(weekStart) {
-  const weekEnd = addWeeks(weekStart, 1);
-  weekEnd.setDate(weekEnd.getDate() - 1);
-
-  const startLabel = weekStart.toLocaleDateString("nl-BE", {
-    day: "numeric",
-    month: "short",
-  });
-  const endLabel = weekEnd.toLocaleDateString("nl-BE", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-
-  return `${startLabel} – ${endLabel}`;
-}
-
-export function getDefaultWeekStart(events) {
-  const today = new Date();
-  today.setHours(12, 0, 0, 0);
-
-  const currentWeekStart = getWeekStart(today);
-  if (getEventsForWeek(events, currentWeekStart).length > 0) {
-    return currentWeekStart;
-  }
-
-  const todayString = toDateString(today);
-  const nextEvent = events.find((event) => event.date >= todayString);
-
-  if (nextEvent) {
-    return getWeekStart(parseDate(nextEvent.date));
-  }
-
-  const lastEvent = events[events.length - 1];
-  return getWeekStart(parseDate(lastEvent.date));
-}
-
-export function getEventTitle(event) {
-  if (event.type === "training") {
-    return "Training";
-  }
-
-  if (event.isHome) {
-    return event.opponent ? `Thuis vs ${event.opponent}` : "Thuiswedstrijd";
-  }
-
-  return event.opponent ? `Uit vs ${event.opponent}` : "Verplaatsing (TBD)";
-}
-
-export function formatEventDate(dateString) {
-  const date = parseDate(dateString);
-  return date.toLocaleDateString("nl-BE", {
-    weekday: "long",
-    day: "numeric",
-    month: "short",
-  });
-}
-
-export function formatEventTime(event) {
-  if (!event.time) {
-    return "uur TBD";
-  }
-  return event.time.replace(":", "u");
-}
-
-export function getPlayerById(playerId) {
-  return PLAYERS.find((player) => player.id === playerId);
-}
 
 export function getResponseKey(playerId, eventId) {
   return `${playerId}-${eventId}`;
 }
 
-export function getPlayersByStatus(eventId, responses, status) {
-  return PLAYERS.filter(
-    (player) => responses[getResponseKey(player.id, eventId)] === status
-  );
-}
-
-export function getEventResponseSummary(eventId, responses) {
-  const present = getPlayersByStatus(eventId, responses, "present");
-  const doubt = getPlayersByStatus(eventId, responses, "doubt");
-  const absent = getPlayersByStatus(eventId, responses, "absent");
-  const unanswered = PLAYERS.filter(
-    (player) => !responses[getResponseKey(player.id, eventId)]
-  );
-
-  return { present, doubt, absent, unanswered };
-}
+export {
+  addWeeks,
+  formatEventDate,
+  formatEventTime,
+  formatWeekRange,
+  getDefaultWeekStart,
+  getEventTitle,
+  getEventsForWeek,
+  getWeekStart,
+} from "./events.js";

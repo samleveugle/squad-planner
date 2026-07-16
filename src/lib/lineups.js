@@ -1,5 +1,5 @@
 import { DEFAULT_FORMATION, createEmptyPositions } from "@/lib/formations";
-import { getEventResponseSummary, getPlayerById } from "@/lib/mock-data";
+import { getEventResponseSummary as getEventResponseSummaryForPlayers, getPlayerById } from "@/lib/players";
 
 export const MAX_BENCH_PLAYERS = 5;
 export const MAX_STAFF = 3;
@@ -40,8 +40,12 @@ export function getPublishedLineup(lineups, eventId) {
   return normalizeLineup(lineup);
 }
 
-export function getEligiblePlayers(eventId, responses) {
-  const { present, doubt } = getEventResponseSummary(eventId, responses);
+export function getEligiblePlayers(eventId, responses, players) {
+  const { present, doubt } = getEventResponseSummaryForPlayers(
+    players,
+    eventId,
+    responses
+  );
   return [...present, ...doubt];
 }
 
@@ -65,9 +69,9 @@ export function getMatchSquadPlayerIds(lineup) {
   ];
 }
 
-export function getMatchSquadPlayers(lineup) {
+export function getMatchSquadPlayers(lineup, players) {
   return getMatchSquadPlayerIds(lineup)
-    .map((playerId) => getPlayerById(playerId))
+    .map((playerId) => getPlayerById(players, playerId))
     .filter(Boolean);
 }
 
@@ -141,14 +145,20 @@ export function formatPublishedAt(isoString) {
   });
 }
 
-export function getPlayerName(playerId) {
-  return getPlayerById(playerId)?.name ?? "Onbekend";
+export function getPlayerName(players, playerId) {
+  return getPlayerById(players, playerId)?.name ?? "Onbekend";
 }
 
-export function getBenchPlayers(bench = []) {
-  return bench.filter(Boolean).map((playerId) => getPlayerById(playerId)).filter(Boolean);
+export function getBenchPlayers(players, bench = []) {
+  return bench
+    .filter(Boolean)
+    .map((playerId) => getPlayerById(players, playerId))
+    .filter(Boolean);
 }
 
-export function getStaffPlayers(staff = []) {
-  return staff.filter(Boolean).map((playerId) => getPlayerById(playerId)).filter(Boolean);
+export function getStaffPlayers(players, staff = []) {
+  return staff
+    .filter(Boolean)
+    .map((playerId) => getPlayerById(players, playerId))
+    .filter(Boolean);
 }

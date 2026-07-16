@@ -15,12 +15,14 @@ import {
   hasRecordedStats,
   parseStatValue,
 } from "@/lib/stats";
+import { usePlayers } from "@/context/PlayersContext";
 
 export function MatchStatsForm({ event, matchStats, lineups, onSave }) {
+  const { players } = usePlayers();
   const lineup = lineups[event.id] ?? null;
   const squadPlayers = useMemo(
-    () => getMatchSquadPlayers(normalizeLineup(lineup)),
-    [lineup]
+    () => getMatchSquadPlayers(normalizeLineup(lineup), players),
+    [lineup, players]
   );
   const squadPlayerIds = useMemo(
     () => squadPlayers.map((player) => player.id),

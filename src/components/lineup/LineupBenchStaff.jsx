@@ -1,11 +1,14 @@
+"use client";
+
+"use client";
+
 import { cn } from "@/lib/utils";
-import {
-  getPlayerName,
-  MAX_BENCH_PLAYERS,
-  MAX_STAFF,
-} from "@/lib/lineups";
+import { MAX_BENCH_PLAYERS, MAX_STAFF } from "@/lib/lineups";
+import { usePlayers } from "@/context/PlayersContext";
 
 function PlayerBadge({ playerId, highlight = false, label }) {
+  const { getPlayerName } = usePlayers();
+
   return (
     <div
       className={cn(
