@@ -9,12 +9,35 @@ export function useSystemCertificates() {
     return;
   }
 
+  const skipReason =
+    process.env.VERCEL === "1"
+      ? "vercel"
+      : process.platform !== "win32"
+        ? "non-windows"
+        : null;
+
+  if (skipReason) {
+    configured = true;
+
+    // #region agent log
+    debugLog(
+      "node-ssl.js:useSystemCertificates",
+      "skipped",
+      { skipReason, vercel: process.env.VERCEL === "1", platform: process.platform },
+      "A"
+    );
+    // #endregion
+
+    return;
+  }
+
   // #region agent log
   debugLog(
     "node-ssl.js:useSystemCertificates",
     "called",
     {
       vercel: process.env.VERCEL === "1",
+      platform: process.platform,
       hasGetCa: typeof getCACertificates === "function",
       hasSetCa: typeof setDefaultCACertificates === "function",
     },
