@@ -151,18 +151,20 @@ Dit draait migrate + seed: tabellen aanmaken, spelers en seizoens-events laden.
 ### 2. Redirect URLs
 **Authentication** → **URL Configuration**
 
-Voeg **alleen deze twee** callback-URLs toe (wachtwoord-reset loopt ook via `/auth/callback`):
+Voeg **deze callback-URLs** toe:
 
 | Redirect URL |
 |--------------|
 | `http://localhost:3000/auth/callback` |
+| `http://localhost:3000/auth/callback/recovery` |
 | `https://squad-planner-beige.vercel.app/auth/callback` |
+| `https://squad-planner-beige.vercel.app/auth/callback/recovery` |
 
 | Instelling | Waarde |
 |------------|--------|
 | Site URL | `https://squad-planner-beige.vercel.app` |
 
-> Je hoeft **`/auth/reset-password` niet apart** toe te voegen. De reset-mail stuurt naar `/auth/callback?next=/auth/reset-password`; Supabase checkt alleen de callback-URL.
+> **Wachtwoord reset** gebruikt `/auth/callback/recovery` (aparte route). De `next`-parameter in URLs wordt door Supabase vaak verwijderd — daarom niet alleen `/auth/callback?next=...` gebruiken.
 
 ### 3. E-mail koppelen aan speler
 - **Via app:** admin → tab **Spelers** → speler toevoegen/bewerken → e-mail invullen

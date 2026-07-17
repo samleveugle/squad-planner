@@ -10,6 +10,7 @@ import {
   getSiteUrl,
   linkPlayerToAuthUser,
 } from "@/lib/auth";
+import { debugLog } from "@/lib/debug-log";
 import { validatePasswordForm } from "@/lib/password";
 import { createClient } from "@/lib/supabase/server";
 
@@ -146,9 +147,20 @@ export async function requestPasswordReset(email) {
       };
     }
 
+    const redirectTo = `${getSiteUrl()}/auth/callback/recovery`;
+
+    // #region agent log
+    debugLog(
+      "auth.js:requestPasswordReset",
+      "sending reset",
+      { redirectTo },
+      "B"
+    );
+    // #endregion
+
     const supabase = await createClient();
     const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-      redirectTo: getAuthCallbackUrl("/auth/reset-password"),
+      redirectTo,
     });
 
     if (error) {
