@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { addWeeks, formatWeekRange, getWeekStart } from "@/lib/mock-data";
+import { addWeeks, formatWeekRange, getWeekStart } from "@/lib/events";
 
 export function WeekNavigator({ weekStart, onWeekChange }) {
   function goToPreviousWeek() {

@@ -38,6 +38,28 @@ import {
 import { getResponseKey } from "@/lib/mock-data";
 import { getUnseenPublishedLineups } from "@/lib/lineups";
 
+const ADMIN_TABS = [
+  "admin",
+  "players-admin",
+  "events-admin",
+  "lineup-admin",
+  "stats-admin",
+];
+const PLAYER_TABS = ["lineup", "stats"];
+
+function getRoleViewStorageKey(playerId) {
+  return `squad-planner-role-view-${playerId}`;
+}
+
+function readStoredRoleView(playerId) {
+  if (typeof window === "undefined") {
+    return "player";
+  }
+
+  const stored = window.localStorage.getItem(getRoleViewStorageKey(playerId));
+  return stored === "admin" ? "admin" : "player";
+}
+
 export function SquadPlanner({ currentPlayer }) {
   const currentPlayerId = currentPlayer.id;
   const [players, setPlayers] = useState([]);
@@ -48,12 +70,19 @@ export function SquadPlanner({ currentPlayer }) {
   const [seenLineups, setSeenLineups] = useState({});
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
   const [activeTab, setActiveTab] = useState("calendar");
+  const [roleView, setRoleView] = useState(() =>
+    readStoredRoleView(currentPlayer.id)
+  );
   const [dataLoading, setDataLoading] = useState(true);
   const [saveError, setSaveError] = useState(null);
 
   const weekEvents = getEventsForWeek(events, weekStart);
-  const showPlayerTabs = currentPlayer.isSquadPlayer ?? false;
-  const showAdminTabs = currentPlayer.isAdmin ?? false;
+  const isAdmin = currentPlayer.isAdmin ?? false;
+  const isSquadPlayer = currentPlayer.isSquadPlayer ?? false;
+  const canSwitchRole = isAdmin && isSquadPlayer;
+  const showAdminTabs = isAdmin && (!canSwitchRole || roleView === "admin");
+  const showPlayerTabs =
+    isSquadPlayer && (!canSwitchRole || roleView === "player");
 
   const unseenLineupEvents = useMemo(
     () =>
@@ -125,11 +154,41 @@ export function SquadPlanner({ currentPlayer }) {
   }, []);
 
   useEffect(() => {
+    setRoleView(readStoredRoleView(currentPlayer.id));
+  }, [currentPlayer.id]);
+
+  useEffect(() => {
+    if (!canSwitchRole) {
+      return;
+    }
+
+    window.localStorage.setItem(getRoleViewStorageKey(currentPlayer.id), roleView);
+  }, [canSwitchRole, currentPlayer.id, roleView]);
+
+  useEffect(() => {
     const playerOnlyTabs = ["lineup", "stats"];
     if (!showPlayerTabs && playerOnlyTabs.includes(activeTab)) {
       setActiveTab("calendar");
     }
   }, [currentPlayer.id, showPlayerTabs, activeTab]);
+
+  useEffect(() => {
+    if (!showAdminTabs && ADMIN_TABS.includes(activeTab)) {
+      setActiveTab("calendar");
+    }
+  }, [showAdminTabs, activeTab]);
+
+  function handleRoleViewChange(nextRoleView) {
+    setRoleView(nextRoleView);
+
+    if (nextRoleView === "player" && ADMIN_TABS.includes(activeTab)) {
+      setActiveTab("calendar");
+    }
+
+    if (nextRoleView === "admin" && PLAYER_TABS.includes(activeTab)) {
+      setActiveTab("calendar");
+    }
+  }
 
   function handleWeekChange(date) {
     setWeekStart(getWeekStart(date));
@@ -300,12 +359,15 @@ export function SquadPlanner({ currentPlayer }) {
   }
 
   function handleViewLineupNotification() {
+    if (canSwitchRole) {
+      setRoleView("player");
+    }
     setActiveTab("lineup");
     unseenLineupEvents.forEach((event) => markLineupSeen(event.id));
   }
 
   const weekViewProps = {
-    events: weekEvents,
+    events,
     weekStart,
     onWeekChange: handleWeekChange,
     currentPlayerId,
@@ -328,7 +390,12 @@ export function SquadPlanner({ currentPlayer }) {
   return (
     <PlayersProvider players={players}>
       <div className="min-h-full bg-muted/30">
-        <Header currentPlayer={currentPlayer} />
+        <Header
+          currentPlayer={currentPlayer}
+          showRoleSwitch={canSwitchRole}
+          roleView={roleView}
+          onRoleViewChange={handleRoleViewChange}
+        />
 
         <main className="mx-auto max-w-3xl space-y-4 px-4 py-8">
         {saveError && (

@@ -48,6 +48,33 @@ export function getEventsForWeek(events, weekStart) {
   );
 }
 
+export function getEventWeekRange(events) {
+  const sorted = sortEventsByDate(events);
+
+  if (sorted.length === 0) {
+    const current = getWeekStart(new Date());
+    return { first: current, last: current };
+  }
+
+  return {
+    first: getWeekStart(parseDate(sorted[0].date)),
+    last: getWeekStart(parseDate(sorted[sorted.length - 1].date)),
+  };
+}
+
+export function getWeekStartsInRange(startWeek, endWeek) {
+  const weeks = [];
+  let current = getWeekStart(startWeek);
+  const end = getWeekStart(endWeek);
+
+  while (current.getTime() <= end.getTime()) {
+    weeks.push(new Date(current));
+    current = addWeeks(current, 1);
+  }
+
+  return weeks;
+}
+
 export function formatWeekRange(weekStart) {
   const weekEnd = addWeeks(weekStart, 1);
   weekEnd.setDate(weekEnd.getDate() - 1);
