@@ -11,7 +11,7 @@ export default async function Home({ searchParams }) {
   if (!player) {
     const authError =
       params?.error === "auth"
-        ? "Inloggen mislukt. Vraag een nieuwe loginlink aan."
+        ? "Inloggen mislukt. Probeer opnieuw of vraag een nieuwe resetlink aan."
         : null;
 
     return <LoginScreen authError={authError} />;

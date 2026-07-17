@@ -4,14 +4,15 @@ Webapp voor onze voetbalploeg: trainingen en wedstrijden plannen, beschikbaarhei
 
 **Live app:** [https://squad-planner-beige.vercel.app](https://squad-planner-beige.vercel.app)
 
-Spelers loggen in met een **magic link** (geen wachtwoord). Admins beheren spelers, agenda, opstellingen en stats.
+Spelers loggen in met **e-mail + wachtwoord**. Eerste keer registreren ze via `/register`. Admins beheren spelers, agenda, opstellingen en stats.
 
 ---
 
 ## Functies
 
 ### Login & rollen
-- Magic link per e-mail — alleen adressen in de database kunnen inloggen
+- E-mail + wachtwoord (registratie, login, wachtwoord vergeten)
+- Alleen e-mails die admin heeft toegevoegd kunnen registreren/inloggen
 - **Admin:** extra tabs (Beschikbaarheid, Spelers, Agenda, Opstelling maken, Stats invoeren)
 - **Ploegspeler:** tabs Kalender, Opstelling, Stats
 - Rollen staan in Supabase (`players.is_admin`, `players.is_squad_player`)
@@ -51,7 +52,7 @@ Spelers loggen in met een **magic link** (geen wachtwoord). Admins beheren spele
 |-----------|-------------|
 | Frontend | Next.js 16, React 19, Tailwind CSS v4, shadcn/ui |
 | Taal | JavaScript |
-| Database & Auth | Supabase (PostgreSQL + magic link) |
+| Database & Auth | Supabase (PostgreSQL + e-mail/wachtwoord) |
 | Hosting | Vercel |
 
 ---
@@ -143,23 +144,38 @@ Dit draait migrate + seed: tabellen aanmaken, spelers en seizoens-events laden.
 1. [supabase.com](https://supabase.com) → je project
 2. **Authentication** → **Providers** → **Email**
 3. **Enable Email provider** aan
-4. Lokaal testen: **Confirm email** uit (optioneel, sneller)
+4. **Enable Email signup** aan (voor registratie)
+5. **Confirm email** uit (aanbevolen voor sneller testen)
+6. Magic link/OTP voor login **uit** (alleen wachtwoord-login)
 
 ### 2. Redirect URLs
 **Authentication** → **URL Configuration**
 
+Voeg **alleen deze twee** callback-URLs toe (wachtwoord-reset loopt ook via `/auth/callback`):
+
+| Redirect URL |
+|--------------|
+| `http://localhost:3000/auth/callback` |
+| `https://squad-planner-beige.vercel.app/auth/callback` |
+
 | Instelling | Waarde |
 |------------|--------|
-| Site URL | `https://squad-planner-beige.vercel.app` (of localhost voor lokaal dev) |
-| Redirect URLs | `http://localhost:3000/auth/callback` |
-| | `https://squad-planner-beige.vercel.app/auth/callback` |
+| Site URL | `https://squad-planner-beige.vercel.app` |
+
+> Je hoeft **`/auth/reset-password` niet apart** toe te voegen. De reset-mail stuurt naar `/auth/callback?next=/auth/reset-password`; Supabase checkt alleen de callback-URL.
 
 ### 3. E-mail koppelen aan speler
-- **Via app:** inloggen als admin → tab **Spelers** → speler bewerken → e-mail invullen
+- **Via app:** admin → tab **Spelers** → speler toevoegen/bewerken → e-mail invullen
 - **Via seed:** e-mail in `src/lib/players-db.js` → `npm run db:seed`
 - Testaccount **Sam:** `leveuglesam98@gmail.com`
 
-Zonder e-mail in `players.email` kan iemand **niet** inloggen.
+### 4. Auth-flow voor spelers
+1. Admin voegt speler toe met e-mail
+2. Speler gaat naar **Registreren** (`/register`) → wachtwoord instellen (1×)
+3. Daarna **Inloggen** (`/`) met e-mail + wachtwoord
+4. **Wachtwoord vergeten** → reset-mail → nieuw wachtwoord op `/auth/reset-password`
+
+Spelers die eerder via magic link inlogden: gebruik **Wachtwoord vergeten** om een wachtwoord in te stellen.
 
 ---
 
@@ -192,26 +208,30 @@ Elke `git push` naar GitHub triggert automatisch een nieuwe deploy.
 | **Opstelling maken** | Admin | Opstelling bouwen en publiceren |
 | **Stats invoeren** | Admin | Goals/assists per wedstrijd |
 
-**Teamleden** hebben alleen nodig: e-mail in de database (admin regelt) + magic link om in te loggen. Geen installatie of dev-setup.
+**Teamleden** hebben alleen nodig: e-mail in de database (admin regelt) → één keer registreren → daarna inloggen met wachtwoord.
 
 ---
 
 ## Testen
 
-### Productie (Vercel)
-1. Open [https://squad-planner-beige.vercel.app](https://squad-planner-beige.vercel.app)
-2. Vul je e-mail in → **Stuur loginlink**
-3. Klik link in inbox → ingelogd
-4. Controleer juiste tabs voor je rol
+### Registratie & login (lokaal)
+1. Admin: speler met e-mail toevoegen (tab **Spelers**)
+2. `/register` → e-mail + wachtwoord (min. 8 tekens, 1 hoofdletter, 1 cijfer)
+3. Uitloggen → `/` → inloggen met wachtwoord
 
-### Lokaal
-1. `npm run dev` → [http://localhost:3000](http://localhost:3000)
-2. Zelfde login-flow met `NEXT_PUBLIC_SITE_URL=http://localhost:3000`
+### Registratie & login (Vercel)
+1. [https://squad-planner-beige.vercel.app/register](https://squad-planner-beige.vercel.app/register)
+2. Zelfde flow als lokaal
+
+### Wachtwoord vergeten
+1. `/forgot-password` → e-mail invullen
+2. Klik resetlink in inbox → nieuw wachtwoord op `/auth/reset-password`
+3. Inloggen met nieuw wachtwoord
 
 ### Admin — Spelers
 1. Inloggen als admin (bv. Sam)
 2. Tab **Spelers** → toevoegen / bewerken / verwijderen
-3. Uitloggen → inloggen met nieuwe speler-e-mail
+3. Uitloggen → nieuwe speler registreert en logt in
 
 ### Admin — Agenda
 1. Tab **Agenda** → event toevoegen
@@ -227,15 +247,22 @@ Elke `git push` naar GitHub triggert automatisch een nieuwe deploy.
 
 ## Troubleshooting
 
-### Magic link komt niet aan
+### Reset-mail komt niet aan
 - Check spam/promoties
 - Supabase → **Authentication** → **Logs**
 - Gratis tier: ~2 e-mails/uur — wacht of zet **custom SMTP** aan
 
-### Redirect URL / inloggen na klik mislukt
-- Supabase redirect URL moet exact `/auth/callback` bevatten
-- `NEXT_PUBLIC_SITE_URL` moet overeenkomen met de URL waar je de app opent
+### Redirect URL / reset-link werkt niet
+- Redirect URLs moeten exact `/auth/callback` bevatten (lokaal + Vercel)
+- `NEXT_PUBLIC_SITE_URL` moet overeenkomen met je app-URL
 - Na env-wijziging op Vercel: **Redeploy**
+
+### "Dit account is al geregistreerd"
+- Log in met wachtwoord, of gebruik **Wachtwoord vergeten**
+- Spelers met oude magic-link login: reset via **Wachtwoord vergeten**
+
+### "Geen account voor dit e-mailadres"
+- E-mail staat niet in `players.email` — admin voegt toe via tab **Spelers**
 
 ### `TypeError: fetch failed` op Vercel (login)
 - Oorzaak was Windows SSL-fix die ook op Vercel draaide
@@ -249,9 +276,6 @@ Elke `git push` naar GitHub triggert automatisch een nieuwe deploy.
 ### Lege kalender / geen spelers
 - `npm run db:seed` of `npm run db:setup`
 - Check Supabase → Table Editor → `players` / `events`
-
-### "Geen account voor dit e-mailadres"
-- E-mail staat niet in `players.email` — admin voegt toe via tab **Spelers**
 
 ---
 
@@ -267,6 +291,7 @@ Elke `git push` naar GitHub triggert automatisch een nieuwe deploy.
 | 6e-a | Admin spelers beheren | ✅ |
 | 6e-b | Admin agenda beheren | ✅ |
 | 6e-c | Deploy Vercel | ✅ |
+| 8 | E-mail + wachtwoord login | ✅ |
 
 ---
 

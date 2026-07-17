@@ -126,7 +126,7 @@ export async function getPlayerByEmail(email) {
 
   const { data, error } = await admin
     .from("players")
-    .select("id, name, email")
+    .select("id, name, email, auth_user_id")
     .eq("email", normalized)
     .maybeSingle();
 
@@ -135,6 +135,34 @@ export async function getPlayerByEmail(email) {
   }
 
   return data;
+}
+
+export async function getPlayerRegistrationEligibility(email) {
+  const player = await getPlayerByEmail(email);
+
+  if (!player) {
+    return {
+      allowed: false,
+      error: "Geen account voor dit e-mailadres. Vraag je admin om toegang.",
+    };
+  }
+
+  if (player.auth_user_id) {
+    return {
+      allowed: false,
+      error:
+        "Dit account is al geregistreerd. Log in of gebruik wachtwoord vergeten.",
+    };
+  }
+
+  return { allowed: true, player, error: null };
+}
+
+export function getAuthCallbackUrl(nextPath = "/") {
+  const siteUrl = getSiteUrl();
+  const next = nextPath.startsWith("/") ? nextPath : `/${nextPath}`;
+  const params = new URLSearchParams({ next });
+  return `${siteUrl}/auth/callback?${params.toString()}`;
 }
 
 export function getSiteUrl() {

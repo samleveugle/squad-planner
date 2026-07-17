@@ -8,15 +8,23 @@ export async function GET(request) {
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/";
 
-  if (code) {
-    const supabase = await createClient();
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-
-    if (!error && data.user) {
-      await linkPlayerToAuthUser(data.user);
-      return NextResponse.redirect(`${origin}${next}`);
-    }
+  if (!code) {
+    return NextResponse.redirect(`${origin}/?error=auth`);
   }
 
-  return NextResponse.redirect(`${origin}/?error=auth`);
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+  if (error || !data.user) {
+    return NextResponse.redirect(`${origin}/?error=auth`);
+  }
+
+  const safeNext = next.startsWith("/") ? next : "/";
+
+  if (safeNext === "/auth/reset-password") {
+    return NextResponse.redirect(`${origin}/auth/reset-password`);
+  }
+
+  await linkPlayerToAuthUser(data.user);
+  return NextResponse.redirect(`${origin}${safeNext}`);
 }
