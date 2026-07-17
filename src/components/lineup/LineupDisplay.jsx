@@ -6,6 +6,7 @@ export function LineupDisplay({
   positions,
   bench = [],
   staff = [],
+  numbers = {},
   compact = false,
   highlightPlayerId = null,
 }) {
@@ -15,6 +16,7 @@ export function LineupDisplay({
         <LineupField
           formationId={formationId}
           positions={positions}
+          numbers={numbers}
           compact={compact}
           highlightPlayerId={highlightPlayerId}
         />
@@ -23,6 +25,7 @@ export function LineupDisplay({
         <LineupBenchStaff
           bench={bench}
           staff={staff}
+          numbers={numbers}
           highlightPlayerId={highlightPlayerId}
         />
       </div>

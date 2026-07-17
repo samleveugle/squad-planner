@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { FormationPicker } from "@/components/lineup/FormationPicker";
 import { LineupDisplay } from "@/components/lineup/LineupDisplay";
+import { ShirtNumberSelect } from "@/components/lineup/ShirtNumberSelect";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,9 +26,12 @@ import {
   formatPublishedAt,
   getAllAssignedPlayerIds,
   getEligiblePlayers,
+  getMatchSquadPlayerIds,
   MAX_BENCH_PLAYERS,
   MAX_STAFF,
   normalizeLineup,
+  pruneLineupNumbers,
+  validateLineupNumbers,
 } from "@/lib/lineups";
 
 const EMPTY_VALUE = "__empty__";
@@ -47,6 +51,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
   const [positions, setPositions] = useState(normalizedSaved.positions);
   const [bench, setBench] = useState(() => toFilledArray(normalizedSaved.bench, MAX_BENCH_PLAYERS));
   const [staff, setStaff] = useState(() => toFilledArray(normalizedSaved.staff, MAX_STAFF));
+  const [numbers, setNumbers] = useState(normalizedSaved.numbers ?? {});
   const [savedMessage, setSavedMessage] = useState("");
 
   useEffect(() => {
@@ -55,6 +60,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
     setPositions(lineup.positions);
     setBench(toFilledArray(lineup.bench, MAX_BENCH_PLAYERS));
     setStaff(toFilledArray(lineup.staff, MAX_STAFF));
+    setNumbers(lineup.numbers ?? {});
   }, [savedLineup, event.id]);
 
   const eligiblePlayers = getEligiblePlayers(event.id, responses, players);
@@ -169,16 +175,68 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
     setSavedMessage("");
   }
 
+  function getUsedShirtNumbers(excludePlayerId = null) {
+    const used = new Set();
+
+    for (const [playerId, number] of Object.entries(numbers)) {
+      if (playerId !== excludePlayerId && number != null) {
+        used.add(number);
+      }
+    }
+
+    return used;
+  }
+
+  function handleNumberChange(playerId, number) {
+    setNumbers((current) => {
+      const next = { ...current };
+
+      if (number == null) {
+        delete next[playerId];
+      } else {
+        next[playerId] = number;
+      }
+
+      return next;
+    });
+    setSavedMessage("");
+  }
+
   function buildLineupPayload() {
+    const squadPlayerIds = getMatchSquadPlayerIds({
+      positions,
+      bench: compactArray(bench),
+    });
+
     return {
       formation,
       positions,
       bench: compactArray(bench),
       staff: compactArray(staff),
+      numbers: pruneLineupNumbers(numbers, squadPlayerIds),
     };
   }
 
+  function validateBeforePersist() {
+    const payload = buildLineupPayload();
+    const validation = validateLineupNumbers(
+      payload.numbers,
+      getMatchSquadPlayerIds(payload)
+    );
+
+    if (!validation.valid) {
+      setSavedMessage(validation.error);
+      return false;
+    }
+
+    return true;
+  }
+
   function handleSave() {
+    if (!validateBeforePersist()) {
+      return;
+    }
+
     onSave({
       ...buildLineupPayload(),
       published: isPublished,
@@ -200,6 +258,10 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
 
     if (staffCount > MAX_STAFF) {
       setSavedMessage(`Maximaal ${MAX_STAFF} stafleden toegestaan.`);
+      return;
+    }
+
+    if (!validateBeforePersist()) {
       return;
     }
 
@@ -243,6 +305,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
         positions={positions}
         bench={bench}
         staff={staff}
+        numbers={numbers}
       />
 
       <div>
@@ -257,7 +320,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
                 value={positions[slot.id] ?? EMPTY_VALUE}
                 onValueChange={(value) => handlePositionChange(slot.id, value)}
               >
-                <SelectTrigger className="h-8 flex-1 text-xs">
+                <SelectTrigger className="h-8 min-w-0 flex-1 text-xs">
                   <SelectValue placeholder="Kies speler" />
                 </SelectTrigger>
                 <SelectContent>
@@ -269,6 +332,12 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
                   ))}
                 </SelectContent>
               </Select>
+              <ShirtNumberSelect
+                playerId={positions[slot.id]}
+                value={positions[slot.id] ? numbers[positions[slot.id]] : null}
+                onChange={handleNumberChange}
+                usedNumbers={getUsedShirtNumbers(positions[slot.id])}
+              />
             </div>
           ))}
         </div>
@@ -286,7 +355,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
                 value={playerId ?? EMPTY_VALUE}
                 onValueChange={(value) => handleBenchChange(index, value)}
               >
-                <SelectTrigger className="h-8 flex-1 text-xs">
+                <SelectTrigger className="h-8 min-w-0 flex-1 text-xs">
                   <SelectValue placeholder="Kies speler" />
                 </SelectTrigger>
                 <SelectContent>
@@ -298,6 +367,12 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
                   ))}
                 </SelectContent>
               </Select>
+              <ShirtNumberSelect
+                playerId={playerId}
+                value={playerId ? numbers[playerId] : null}
+                onChange={handleNumberChange}
+                usedNumbers={getUsedShirtNumbers(playerId)}
+              />
             </div>
           ))}
         </div>

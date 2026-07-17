@@ -2,11 +2,13 @@
 
 import { cn } from "@/lib/utils";
 import { getFormation } from "@/lib/formations";
+import { formatPlayerWithNumber } from "@/lib/lineups";
 import { usePlayers } from "@/context/PlayersContext";
 
 export function LineupField({
   formationId,
   positions = {},
+  numbers = {},
   compact = false,
   highlightPlayerId = null,
 }) {
@@ -28,6 +30,10 @@ export function LineupField({
       {formation.positions.map((slot) => {
         const playerId = positions[slot.id];
         const isHighlighted = highlightPlayerId && playerId === highlightPlayerId;
+        const shirtNumber = playerId ? numbers[playerId] : null;
+        const label = playerId
+          ? formatPlayerWithNumber(getPlayerName(playerId), shirtNumber)
+          : "—";
 
         return (
           <div
@@ -49,7 +55,7 @@ export function LineupField({
                 {slot.label}
               </span>
               <span className="mt-0.5 line-clamp-2 text-[10px] font-bold leading-tight sm:text-xs">
-                {playerId ? getPlayerName(playerId) : "—"}
+                {label}
               </span>
             </div>
           </div>

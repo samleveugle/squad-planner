@@ -2,7 +2,24 @@
 
 import { requireAdminPlayer, requireAuthPlayer } from "@/lib/auth";
 import { lineupToRow, rowsToLineupsMap } from "@/lib/lineups-db";
+import {
+  getMatchSquadPlayerIds,
+  normalizeLineup,
+  validateLineupNumbers,
+} from "@/lib/lineups";
 import { createAdminClient } from "@/lib/supabase/admin";
+
+function validateLineupPayload(lineupData) {
+  const normalized = normalizeLineup(lineupData);
+  const assignedPlayerIds = getMatchSquadPlayerIds(normalized);
+  const validation = validateLineupNumbers(normalized.numbers, assignedPlayerIds);
+
+  if (!validation.valid) {
+    return validation.error;
+  }
+
+  return null;
+}
 
 export async function getLineups() {
   const auth = await requireAuthPlayer();
@@ -41,6 +58,11 @@ export async function saveLineup(eventId, lineupData) {
 
   if (!eventId || !lineupData) {
     return { success: false, error: "Event of opstelling ontbreekt." };
+  }
+
+  const validationError = validateLineupPayload(lineupData);
+  if (validationError) {
+    return { success: false, error: validationError };
   }
 
   try {
@@ -87,6 +109,11 @@ export async function publishLineup(eventId, lineupData) {
 
   if (!eventId || !lineupData) {
     return { success: false, error: "Event of opstelling ontbreekt." };
+  }
+
+  const validationError = validateLineupPayload(lineupData);
+  if (validationError) {
+    return { success: false, error: validationError };
   }
 
   try {

@@ -29,6 +29,7 @@ export function PublishedLineup({
   const formation = getFormation(lineup.formation);
   const bench = lineup.bench ?? [];
   const staff = lineup.staff ?? [];
+  const numbers = lineup.numbers ?? {};
   const playerRole = getPlayerLineupRole(lineup, currentPlayerId);
   const roleLabel = getLineupRoleLabel(playerRole);
 
@@ -51,6 +52,7 @@ export function PublishedLineup({
         positions={lineup.positions}
         bench={bench}
         staff={staff}
+        numbers={numbers}
         compact={compact}
         highlightPlayerId={currentPlayerId}
       />

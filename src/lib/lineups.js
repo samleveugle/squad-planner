@@ -3,6 +3,8 @@ import { getEventResponseSummary as getEventResponseSummaryForPlayers, getPlayer
 
 export const MAX_BENCH_PLAYERS = 5;
 export const MAX_STAFF = 3;
+export const MIN_SHIRT_NUMBER = 1;
+export const MAX_SHIRT_NUMBER = 21;
 
 export function createEmptyLineup(formation = DEFAULT_FORMATION) {
   return {
@@ -10,6 +12,7 @@ export function createEmptyLineup(formation = DEFAULT_FORMATION) {
     positions: createEmptyPositions(formation),
     bench: [],
     staff: [],
+    numbers: {},
     published: false,
     publishedAt: null,
   };
@@ -25,6 +28,67 @@ export function normalizeLineup(lineup, formation = DEFAULT_FORMATION) {
     ...lineup,
     bench: lineup.bench ?? [],
     staff: lineup.staff ?? [],
+    numbers: lineup.numbers ?? {},
+  };
+}
+
+export function getPlayerNumber(lineup, playerId) {
+  if (!lineup || !playerId) {
+    return null;
+  }
+
+  const number = normalizeLineup(lineup).numbers?.[playerId];
+  return typeof number === "number" ? number : null;
+}
+
+export function formatPlayerWithNumber(name, number) {
+  if (number == null) {
+    return name;
+  }
+
+  return `${number} · ${name}`;
+}
+
+export function pruneLineupNumbers(numbers, assignedPlayerIds) {
+  const allowed = new Set(assignedPlayerIds);
+  const next = {};
+
+  for (const [playerId, number] of Object.entries(numbers ?? {})) {
+    if (allowed.has(playerId)) {
+      next[playerId] = number;
+    }
+  }
+
+  return next;
+}
+
+export function validateLineupNumbers(numbers, assignedPlayerIds) {
+  const allowed = new Set(assignedPlayerIds);
+  const seen = new Set();
+  const errors = [];
+
+  for (const [playerId, rawNumber] of Object.entries(numbers ?? {})) {
+    if (!allowed.has(playerId)) {
+      continue;
+    }
+
+    const number = Number(rawNumber);
+
+    if (!Number.isInteger(number) || number < MIN_SHIRT_NUMBER || number > MAX_SHIRT_NUMBER) {
+      errors.push(`Rugnummer moet tussen ${MIN_SHIRT_NUMBER} en ${MAX_SHIRT_NUMBER} liggen.`);
+      continue;
+    }
+
+    if (seen.has(number)) {
+      errors.push(`Rugnummer ${number} is dubbel toegewezen.`);
+    } else {
+      seen.add(number);
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    error: errors[0] ?? null,
   };
 }
 

@@ -1,12 +1,10 @@
 "use client";
 
-"use client";
-
 import { cn } from "@/lib/utils";
-import { MAX_BENCH_PLAYERS, MAX_STAFF } from "@/lib/lineups";
+import { formatPlayerWithNumber, MAX_BENCH_PLAYERS, MAX_STAFF } from "@/lib/lineups";
 import { usePlayers } from "@/context/PlayersContext";
 
-function PlayerBadge({ playerId, highlight = false, label }) {
+function PlayerBadge({ playerId, highlight = false, label, shirtNumber = null }) {
   const { getPlayerName } = usePlayers();
 
   return (
@@ -25,7 +23,7 @@ function PlayerBadge({ playerId, highlight = false, label }) {
           {label}
         </span>
       )}
-      {playerId ? getPlayerName(playerId) : "—"}
+      {playerId ? formatPlayerWithNumber(getPlayerName(playerId), shirtNumber) : "—"}
     </div>
   );
 }
@@ -33,6 +31,7 @@ function PlayerBadge({ playerId, highlight = false, label }) {
 export function LineupBenchStaff({
   bench = [],
   staff = [],
+  numbers = {},
   highlightPlayerId = null,
 }) {
   const benchSlots = Array.from({ length: MAX_BENCH_PLAYERS }, (_, index) => bench[index] ?? null);
@@ -48,6 +47,7 @@ export function LineupBenchStaff({
               key={`bench-${index}`}
               playerId={playerId}
               label={`Bank ${index + 1}`}
+              shirtNumber={playerId ? numbers[playerId] : null}
               highlight={highlightPlayerId && playerId === highlightPlayerId}
             />
           ))}
