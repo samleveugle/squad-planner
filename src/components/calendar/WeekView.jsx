@@ -43,8 +43,6 @@ export function WeekView({
   responses,
   onAvailabilityChange,
   availabilityDisabled = false,
-  lineups,
-  onLineupViewed,
 }) {
   const [weekRange, setWeekRange] = useState(() =>
     getInitialWeekRange(events, weekStart)
@@ -285,8 +283,6 @@ export function WeekView({
                         availabilityDisabled={availabilityDisabled}
                         responses={responses}
                         currentPlayerId={currentPlayerId}
-                        lineups={lineups}
-                        onLineupViewed={onLineupViewed}
                       />
                     );
                   })}

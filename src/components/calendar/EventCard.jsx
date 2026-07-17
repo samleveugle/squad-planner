@@ -7,9 +7,7 @@ import {
 } from "@/components/ui/card";
 import { AvailabilityPicker } from "@/components/availability/AvailabilityPicker";
 import { EventTeamSummary } from "@/components/availability/EventTeamSummary";
-import { PublishedLineup } from "@/components/lineup/PublishedLineup";
 import { formatEventDate, formatEventTime, getEventTitle } from "@/lib/mock-data";
-import { getPublishedLineup } from "@/lib/lineups";
 
 export function EventCard({
   event,
@@ -18,11 +16,8 @@ export function EventCard({
   availabilityDisabled = false,
   responses,
   currentPlayerId,
-  lineups,
-  onLineupViewed,
 }) {
   const isMatch = event.type === "match";
-  const publishedLineup = isMatch ? getPublishedLineup(lineups, event.id) : null;
 
   return (
     <Card>
@@ -63,15 +58,6 @@ export function EventCard({
           responses={responses}
           currentPlayerId={currentPlayerId}
         />
-
-        {publishedLineup && (
-          <PublishedLineup
-            lineup={publishedLineup}
-            currentPlayerId={currentPlayerId}
-            compact
-            onView={() => onLineupViewed?.(event.id)}
-          />
-        )}
       </CardContent>
     </Card>
   );

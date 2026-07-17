@@ -374,8 +374,6 @@ export function SquadPlanner({ currentPlayer }) {
     responses,
     onAvailabilityChange: handleAvailabilityChange,
     availabilityDisabled: dataLoading,
-    lineups,
-    onLineupViewed: markLineupSeen,
   };
 
   const lineupTabProps = {
