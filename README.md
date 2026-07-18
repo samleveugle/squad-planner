@@ -219,7 +219,9 @@ CRON_SECRET=...   # zelf verzinnen, bv. lang random wachtwoord
 Redeploy na toevoegen op Vercel.
 
 #### 4. Vercel Cron
-`vercel.json` triggert elke zondag rond 20:00 (Europe/Brussels) het endpoint `/api/cron/availability-reminder`.
+`vercel.json` triggert **1× per dag** om ~19:00 UTC (Vercel Hobby-limiet). De handler stuurt enkel op **zondagavond** (Brussels) de push.
+
+> **Hobby-plan:** cron mag maximaal 1× per dag draaien. Op Pro kan het schema nauwkeuriger (bv. elke 15 min op zondag).
 
 Zet `CRON_SECRET` in Vercel; het cron-job stuurt `Authorization: Bearer <CRON_SECRET>` mee.
 

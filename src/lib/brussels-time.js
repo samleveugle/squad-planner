@@ -22,8 +22,11 @@ function getBrusselsParts(date = new Date()) {
 }
 
 export function isAvailabilityReminderWindow(date = new Date()) {
-  const { weekday, hour, minute } = getBrusselsParts(date);
-  return weekday === "Sun" && hour === 20 && minute < 15;
+  const { weekday, hour } = getBrusselsParts(date);
+
+  // Vercel Hobby: cron draait max 1×/dag (~19:00 UTC, ±59 min).
+  // Dat komt neer op zondagavond 20:00–21:59 in Brussels (winter/zomer + jitter).
+  return weekday === "Sun" && hour >= 19 && hour <= 21;
 }
 
 export function formatBrusselsDateTime(date = new Date()) {
