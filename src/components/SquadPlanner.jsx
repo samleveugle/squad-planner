@@ -22,6 +22,8 @@ import { EventsManager } from "@/components/admin/EventsManager";
 import { PlayersManager } from "@/components/admin/PlayersManager";
 import { CalendarTab } from "@/components/calendar/CalendarTab";
 import { Header } from "@/components/layout/Header";
+import { OneSignalInit } from "@/components/notifications/OneSignalInit";
+import { PushOptIn } from "@/components/notifications/PushOptIn";
 import { LineupManager } from "@/components/lineup/LineupManager";
 import { LineupNotificationBanner } from "@/components/lineup/LineupNotificationBanner";
 import { LineupTab } from "@/components/lineup/LineupTab";
@@ -415,6 +417,13 @@ export function SquadPlanner({ currentPlayer }) {
             onView={handleViewLineupNotification}
             onDismiss={handleDismissNotifications}
           />
+        )}
+
+        {isSquadPlayer && process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID && (
+          <>
+            <OneSignalInit playerId={currentPlayerId} />
+            <PushOptIn currentPlayer={currentPlayer} />
+          </>
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>

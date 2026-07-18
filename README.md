@@ -43,6 +43,7 @@ Spelers loggen in met **e-mail + wachtwoord**. Eerste keer registreren ze via `/
 
 ### Overig
 - Dark/light theme toggle
+- **Pushherinnering** zondag 20:00 (OneSignal) — enkel voor ploegspelers die meldingen aanzetten én nog niet alles ingevuld hebben
 
 ---
 
@@ -106,8 +107,13 @@ Open [http://localhost:3000](http://localhost:3000).
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | ✅ | Supabase → Settings → API → service_role (geheim, alleen server) |
 | `NEXT_PUBLIC_SITE_URL` | ✅ | ✅ | Lokaal: `http://localhost:3000` · Productie: `https://squad-planner-beige.vercel.app` |
 | `SUPABASE_DB_URL` | ✅ | ❌ | Alleen voor `npm run db:migrate` (database connection string) |
+| `NEXT_PUBLIC_ONESIGNAL_APP_ID` | ⚙️ | ⚙️ | OneSignal → Settings → Keys & IDs (voor push) |
+| `ONESIGNAL_REST_API_KEY` | ⚙️ | ⚙️ | OneSignal REST API Key (server-only, voor cron) |
+| `CRON_SECRET` | ⚙️ | ⚙️ | Willekeurig geheim voor Vercel Cron (Bearer token) |
 
-**Vercel:** zet de 4 verplichte vars voor **Production** (en Preview). Na wijziging → **Redeploy**.
+⚙️ = nodig voor pushmeldingen. Zonder deze vars werkt de rest van de app gewoon; de push-opt-in UI verschijnt dan niet.
+
+**Vercel:** zet de 4 Supabase/site vars verplicht voor **Production** (en Preview). Na wijziging → **Redeploy**.
 
 **Nooit committen:** `.env.local`, service role key, database-wachtwoord.
 
@@ -178,6 +184,55 @@ Voeg **deze callback-URLs** toe:
 4. **Wachtwoord vergeten** → reset-mail → nieuw wachtwoord op `/auth/reset-password`
 
 Spelers die eerder via magic link inlogden: gebruik **Wachtwoord vergeten** om een wachtwoord in te stellen.
+
+---
+
+## Pushmeldingen (OneSignal)
+
+### Wat spelers moeten doen
+Meldingen komen **niet automatisch** op elke gsm. Elke speler moet:
+1. Inloggen in de app
+2. Op **Meldingen aan** klikken en toestemming geven
+3. **iPhone:** voeg de app toe aan je startscherm (Safari → Deel → Zet op beginscherm) voor betrouwbare web push
+
+### Wat jij als beheerder moet instellen (eenmalig)
+
+#### 1. Database migratie
+Voer `supabase/migrations/003_push_notifications.sql` uit in Supabase → **SQL Editor**.
+
+#### 2. OneSignal-app aanmaken
+1. Account op [onesignal.com](https://onesignal.com)
+2. **New App/Website** → kies **Web Push**
+3. Site URL: `https://squad-planner-beige.vercel.app` (en lokaal `http://localhost:3000` voor test)
+4. Kopieer **App ID** → `NEXT_PUBLIC_ONESIGNAL_APP_ID`
+5. **Settings → Keys & IDs** → kopieer **REST API Key** → `ONESIGNAL_REST_API_KEY`
+
+#### 3. Environment variables
+In `.env.local` (lokaal) en Vercel → **Environment Variables**:
+
+```
+NEXT_PUBLIC_ONESIGNAL_APP_ID=...
+ONESIGNAL_REST_API_KEY=...
+CRON_SECRET=...   # zelf verzinnen, bv. lang random wachtwoord
+```
+
+Redeploy na toevoegen op Vercel.
+
+#### 4. Vercel Cron
+`vercel.json` triggert elke zondag rond 20:00 (Europe/Brussels) het endpoint `/api/cron/availability-reminder`.
+
+Zet `CRON_SECRET` in Vercel; het cron-job stuurt `Authorization: Bearer <CRON_SECRET>` mee.
+
+#### 5. Handmatig testen (zonder te wachten op zondag)
+```bash
+curl -H "Authorization: Bearer JOUW_CRON_SECRET" "https://squad-planner-beige.vercel.app/api/cron/availability-reminder?force=1"
+```
+
+### Wanneer wordt er gepusht?
+- **Wanneer:** zondag 20:00 (Brussels)
+- **Tekst:** *Vergeet je aanwezigheid voor komende week niet in te vullen.*
+- **Naar wie:** ploegspelers met meldingen **aan**, ingelogd account, en **minstens 1 event** in komende week zonder ingevulde beschikbaarheid
+- **Niet naar:** spelers die al alles ingevuld hebben, admins zonder ploegspeler-rol, spelers zonder opt-in
 
 ---
 

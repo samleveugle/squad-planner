@@ -14,6 +14,11 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "Squad Planner",
   description: "Voetbalkalender en beschikbaarheid voor je ploeg",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: "Squad Planner",
+  },
 };
 
 export default function RootLayout({ children }) {
