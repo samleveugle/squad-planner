@@ -109,7 +109,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `SUPABASE_DB_URL` | ✅ | ❌ | Alleen voor `npm run db:migrate` (database connection string) |
 | `NEXT_PUBLIC_ONESIGNAL_APP_ID` | ⚙️ | ⚙️ | OneSignal → Settings → Keys & IDs (voor push) |
 | `ONESIGNAL_REST_API_KEY` | ⚙️ | ⚙️ | OneSignal REST API Key (server-only, voor cron) |
-| `CRON_SECRET` | ⚙️ | ⚙️ | Willekeurig geheim voor Vercel Cron (Bearer token) |
+| `CRON_SECRET` | ⚙️ | ⚙️ | Willekeurig geheim voor Vercel Cron (Bearer token). **Alleen ASCII** (a-z, A-Z, 0-9, `-_`) — geen accenten of speciale Unicode |
 
 ⚙️ = nodig voor pushmeldingen. Zonder deze vars werkt de rest van de app gewoon; de push-opt-in UI verschijnt dan niet.
 
@@ -213,7 +213,7 @@ In `.env.local` (lokaal) en Vercel → **Environment Variables**:
 ```
 NEXT_PUBLIC_ONESIGNAL_APP_ID=...
 ONESIGNAL_REST_API_KEY=...
-CRON_SECRET=...   # zelf verzinnen, bv. lang random wachtwoord
+CRON_SECRET=...   # alleen ASCII! bv. output van: openssl rand -hex 32
 ```
 
 Redeploy na toevoegen op Vercel.
@@ -322,6 +322,11 @@ Elke `git push` naar GitHub triggert automatisch een nieuwe deploy.
 
 ### "Geen account voor dit e-mailadres"
 - E-mail staat niet in `players.email` — admin voegt toe via tab **Spelers**
+
+### `CRON_SECRET` / deploy faalt (non-ASCII character)
+- Vercel stuurt `CRON_SECRET` als HTTP-header; **alleen ASCII** toegestaan (a-z, A-Z, 0-9, `-_`)
+- Geen accenten (`é`), geen `µ`, geen emoji of spaties met vreemde tekens
+- Fix: Vercel → **Settings → Environment Variables** → `CRON_SECRET` vervangen door bv. `openssl rand -hex 32` → **Redeploy**
 
 ### `TypeError: fetch failed` op Vercel (login)
 - Oorzaak was Windows SSL-fix die ook op Vercel draaide
