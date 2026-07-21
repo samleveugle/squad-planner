@@ -122,12 +122,6 @@ export function getOneSignalInstance() {
   return oneSignalInstance;
 }
 
-export function resetOneSignalInitForTests() {
-  oneSignalInstance = null;
-  oneSignalInitPromise = null;
-  oneSignalInitKey = null;
-}
-
 export async function initializeOneSignal(appId, playerId) {
   const initKey = `${appId}:${playerId}`;
 
