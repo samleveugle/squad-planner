@@ -6,8 +6,10 @@ import { getPushPreference, setPushEnabled } from "@/app/actions/push";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  agentDebugLog,
   disablePushSubscription,
   enablePushForPlayer,
+  getAgentDebugLogs,
   getIosPwaRequirementMessage,
   getOneSignalInstance,
   initializeOneSignal,
@@ -64,28 +66,71 @@ export function PushOptIn({ currentPlayer }) {
       return;
     }
 
+    // #region agent log
+    agentDebugLog("C", "PushOptIn.jsx:effect", "PushOptIn sdk effect run", {
+      hasInstance: !!getOneSignalInstance(),
+      visibility: document.visibilityState,
+    });
+    // #endregion
+
     if (getOneSignalInstance()) {
       setSdkStatus("ready");
       return;
     }
 
     function handleReady() {
+      // #region agent log
+      agentDebugLog("C", "PushOptIn.jsx:handleReady", "received onesignal-ready", {
+        hasInstance: !!getOneSignalInstance(),
+      });
+      // #endregion
       setSdkStatus("ready");
       setMessage("");
       setMessageTone("muted");
     }
 
     function handleError(event) {
+      // #region agent log
+      agentDebugLog("C", "PushOptIn.jsx:handleError", "received onesignal-error", {
+        error: event.detail?.message ?? null,
+      });
+      // #endregion
       setSdkStatus("error");
       setMessage(event.detail?.message ?? "Pushdienst kon niet starten.");
       setMessageTone("error");
     }
 
+    function handlePageShow(event) {
+      // #region agent log
+      agentDebugLog("E", "PushOptIn.jsx:pageshow", "pageshow fired", {
+        persisted: !!event.persisted,
+        hasInstance: !!getOneSignalInstance(),
+        visibility: document.visibilityState,
+      });
+      // #endregion
+    }
+
+    function handleVisibility() {
+      // #region agent log
+      agentDebugLog("E", "PushOptIn.jsx:visibilitychange", "visibilitychange", {
+        visibility: document.visibilityState,
+        hasInstance: !!getOneSignalInstance(),
+      });
+      // #endregion
+    }
+
     window.addEventListener("onesignal-ready", handleReady);
     window.addEventListener("onesignal-error", handleError);
+    window.addEventListener("pageshow", handlePageShow);
+    document.addEventListener("visibilitychange", handleVisibility);
 
     const timeout = window.setTimeout(() => {
       if (!getOneSignalInstance()) {
+        // #region agent log
+        agentDebugLog("C", "PushOptIn.jsx:timeout", "22s sdk timeout fired", {
+          visibility: document.visibilityState,
+        });
+        // #endregion
         setSdkStatus("error");
         setMessage(
           "Pushdienst startte niet. Sluit de app, open opnieuw vanaf je beginscherm en probeer opnieuw."
@@ -97,6 +142,8 @@ export function PushOptIn({ currentPlayer }) {
     return () => {
       window.removeEventListener("onesignal-ready", handleReady);
       window.removeEventListener("onesignal-error", handleError);
+      window.removeEventListener("pageshow", handlePageShow);
+      document.removeEventListener("visibilitychange", handleVisibility);
       window.clearTimeout(timeout);
     };
   }, [appId, currentPlayer.id, currentPlayer.isSquadPlayer, loadPreference, supportedHost]);
@@ -108,7 +155,7 @@ export function PushOptIn({ currentPlayer }) {
   if (!supportedHost) {
     return (
       <div className="rounded-lg border border-dashed bg-card px-4 py-3">
-        <p className="text-sm font-medium">Beschikbaarheidsherinnering</p>
+        <p className="text-sm font-medium">Herinnering</p>
         <p className="mt-1 text-xs text-muted-foreground">
           Pushmeldingen werken enkel op de live app. Open de app via je Vercel-URL om
           meldingen in te schakelen.
@@ -195,11 +242,11 @@ export function PushOptIn({ currentPlayer }) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-medium">Beschikbaarheidsherinnering</p>
+            <p className="text-sm font-medium">Herinnering</p>
             {!loading && <Badge variant={statusVariant}>{statusLabel}</Badge>}
           </div>
           <p className="text-xs text-muted-foreground">
-            Zondag om 20:00, enkel als je nog niet alles hebt ingevuld voor komende week.
+            Elke zondag om 20:00.
           </p>
         </div>
 
@@ -241,6 +288,27 @@ export function PushOptIn({ currentPlayer }) {
           {message}
         </p>
       )}
+
+      {/* #region agent log */}
+      {messageTone === "error" && (
+        <button
+          type="button"
+          className="mt-2 text-xs underline text-muted-foreground"
+          onClick={async () => {
+            const logs = getAgentDebugLogs();
+            const text = JSON.stringify(logs, null, 2);
+            try {
+              await navigator.clipboard.writeText(text);
+              setMessage(`${message}\n\n[Debuglog gekopieerd — plak in chat]`);
+            } catch {
+              setMessage(`${message}\n\n[Debuglog:]\n${text.slice(0, 1500)}`);
+            }
+          }}
+        >
+          Kopieer debuglog
+        </button>
+      )}
+      {/* #endregion */}
     </div>
   );
 }
