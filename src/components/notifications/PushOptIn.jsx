@@ -14,7 +14,6 @@ import {
   getOneSignalInstance,
   initializeOneSignal,
   isOneSignalSupportedHost,
-  waitForOneSignal,
   withNetworkRetry,
 } from "@/lib/onesignal-client";
 import { Bell, BellOff, Loader2 } from "lucide-react";
@@ -227,16 +226,33 @@ export function PushOptIn({ currentPlayer }) {
   }
 
   async function handleEnable() {
+    // #region agent log
+    agentDebugLog("G", "PushOptIn.jsx:handleEnable:start", "enable clicked", {
+      busy,
+      enabled,
+      sdkStatus,
+    });
+    // #endregion
+
     setBusy(true);
     setMessage("");
     setMessageTone("muted");
 
     try {
+      // #region agent log
+      agentDebugLog("G", "PushOptIn.jsx:handleEnable:init", "await initializeOneSignal", {});
+      // #endregion
       const OneSignal = await initializeOneSignal(appId, currentPlayer.id);
       setSdkStatus("ready");
 
+      // #region agent log
+      agentDebugLog("G", "PushOptIn.jsx:handleEnable:enablePush", "await enablePushForPlayer", {});
+      // #endregion
       await enablePushForPlayer(OneSignal, currentPlayer.id);
 
+      // #region agent log
+      agentDebugLog("G", "PushOptIn.jsx:handleEnable:db", "await setPushEnabled(true)", {});
+      // #endregion
       const result = await withNetworkRetry(() => setPushEnabled(true), {
         attempts: 4,
         label: "setPushEnabled",
@@ -252,25 +268,57 @@ export function PushOptIn({ currentPlayer }) {
       setMessage(
         "Meldingen staan aan. Je krijgt enkel een herinnering als je beschikbaarheid nog ontbreekt."
       );
+      // #region agent log
+      agentDebugLog("G", "PushOptIn.jsx:handleEnable:done", "enable success", {});
+      // #endregion
     } catch (error) {
+      // #region agent log
+      agentDebugLog("G", "PushOptIn.jsx:handleEnable:error", "enable failed", {
+        error: error?.message ?? String(error),
+      });
+      // #endregion
       setEnabled(false);
       setSdkStatus("error");
       setMessageTone("error");
       setMessage(error?.message ?? "Kon meldingen niet inschakelen.");
     } finally {
+      // #region agent log
+      agentDebugLog("G", "PushOptIn.jsx:handleEnable:finally", "clearing busy", {});
+      // #endregion
       setBusy(false);
     }
   }
 
   async function handleDisable() {
+    // #region agent log
+    agentDebugLog("H", "PushOptIn.jsx:handleDisable:start", "disable clicked", {
+      busy,
+      enabled,
+      sdkStatus,
+      hasInstance: !!getOneSignalInstance(),
+    });
+    // #endregion
+
     setBusy(true);
     setMessage("");
     setMessageTone("muted");
 
     try {
-      const OneSignal = await waitForOneSignal();
-      await disablePushSubscription(OneSignal);
+      // Use the same init path as enable — waitForOneSignal can hang on a stuck initPromise.
+      // #region agent log
+      agentDebugLog("H", "PushOptIn.jsx:handleDisable:init", "await initializeOneSignal", {});
+      // #endregion
+      const OneSignal = await initializeOneSignal(appId, currentPlayer.id);
+      setSdkStatus("ready");
 
+      // #region agent log
+      agentDebugLog("H", "PushOptIn.jsx:handleDisable:optOut", "await disablePushSubscription", {});
+      // #endregion
+      await disablePushSubscription(OneSignal, currentPlayer.id);
+
+      // #region agent log
+      agentDebugLog("H", "PushOptIn.jsx:handleDisable:db", "await setPushEnabled(false)", {});
+      // #endregion
       const result = await withNetworkRetry(() => setPushEnabled(false), {
         attempts: 4,
         label: "setPushEnabled",
@@ -283,10 +331,21 @@ export function PushOptIn({ currentPlayer }) {
       setEnabled(false);
       setMessageTone("success");
       setMessage("Meldingen staan uit.");
+      // #region agent log
+      agentDebugLog("H", "PushOptIn.jsx:handleDisable:done", "disable success", {});
+      // #endregion
     } catch (error) {
+      // #region agent log
+      agentDebugLog("H", "PushOptIn.jsx:handleDisable:error", "disable failed", {
+        error: error?.message ?? String(error),
+      });
+      // #endregion
       setMessageTone("error");
       setMessage(error?.message ?? "Kon meldingen niet uitschakelen.");
     } finally {
+      // #region agent log
+      agentDebugLog("H", "PushOptIn.jsx:handleDisable:finally", "clearing busy", {});
+      // #endregion
       setBusy(false);
     }
   }

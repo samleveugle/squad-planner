@@ -249,7 +249,7 @@ export function loadOneSignalScript() {
   return new Promise((resolve, reject) => {
     const script = document.createElement("script");
     script.id = "onesignal-sdk";
-    script.src = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
+    script.src = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js?v=160606";
     script.defer = true;
     script.onload = () => {
       // #region agent log
@@ -550,10 +550,50 @@ export async function isPushSubscribed(OneSignal) {
   return nativePermission === "granted" && OneSignal.Notifications?.permission === true;
 }
 
+function getSubscriptionSnapshot(OneSignal) {
+  const subscription = OneSignal?.User?.PushSubscription;
+
+  return {
+    hasSubscription: !!subscription,
+    optedIn: subscription?.optedIn === true,
+    permission: OneSignal?.Notifications?.permission ?? null,
+    permissionNative: OneSignal?.Notifications?.permissionNative ?? null,
+    subscriptionId: subscription?.id ?? null,
+    hasToken: Boolean(subscription?.token),
+  };
+}
+
 export async function enablePushForPlayer(OneSignal, playerId) {
+  // #region agent log
+  agentDebugLog("G", "onesignal-client.js:enable:start", "enablePushForPlayer start", {
+    playerId,
+    ...getSubscriptionSnapshot(OneSignal),
+  });
+  // #endregion
+
   await OneSignal.login(playerId);
+
+  // #region agent log
+  agentDebugLog("G", "onesignal-client.js:enable:afterLogin", "login completed", {
+    ...getSubscriptionSnapshot(OneSignal),
+  });
+  // #endregion
+
   await OneSignal.Notifications.requestPermission();
+
+  // #region agent log
+  agentDebugLog("G", "onesignal-client.js:enable:afterPermission", "permission requested", {
+    ...getSubscriptionSnapshot(OneSignal),
+  });
+  // #endregion
+
   await OneSignal.User.PushSubscription.optIn();
+
+  // #region agent log
+  agentDebugLog("G", "onesignal-client.js:enable:afterOptIn", "optIn completed", {
+    ...getSubscriptionSnapshot(OneSignal),
+  });
+  // #endregion
 
   const subscribed = await isPushSubscribed(OneSignal);
 
@@ -574,10 +614,64 @@ export async function enablePushForPlayer(OneSignal, playerId) {
   return true;
 }
 
-export async function disablePushSubscription(OneSignal) {
-  if (OneSignal?.User?.PushSubscription?.optOut) {
-    await OneSignal.User.PushSubscription.optOut();
+export async function disablePushSubscription(OneSignal, playerId = null) {
+  // #region agent log
+  agentDebugLog("H", "onesignal-client.js:disable:start", "disablePushSubscription start", {
+    playerId,
+    ...getSubscriptionSnapshot(OneSignal),
+  });
+  // #endregion
+
+  if (!OneSignal?.User?.PushSubscription) {
+    // #region agent log
+    agentDebugLog("H", "onesignal-client.js:disable:no-sub", "no PushSubscription object", {});
+    // #endregion
+    return false;
   }
+
+  if (playerId) {
+    // #region agent log
+    agentDebugLog("H", "onesignal-client.js:disable:beforeLogin", "login before optOut", {
+      playerId,
+    });
+    // #endregion
+    await OneSignal.login(playerId);
+    // #region agent log
+    agentDebugLog("H", "onesignal-client.js:disable:afterLogin", "login completed", {
+      ...getSubscriptionSnapshot(OneSignal),
+    });
+    // #endregion
+  }
+
+  const snapshot = getSubscriptionSnapshot(OneSignal);
+
+  // After a PWA reopen the DB can say "enabled" while the SDK subscription is already
+  // opted out / not hydrated. Calling optOut() then hits iOS IndexedDB and can hang forever.
+  if (!snapshot.optedIn) {
+    // #region agent log
+    agentDebugLog(
+      "H",
+      "onesignal-client.js:disable:skipOptOut",
+      "already opted out — skip optOut()",
+      snapshot
+    );
+    // #endregion
+    return false;
+  }
+
+  // #region agent log
+  agentDebugLog("H", "onesignal-client.js:disable:beforeOptOut", "calling optOut()", snapshot);
+  // #endregion
+
+  await OneSignal.User.PushSubscription.optOut();
+
+  // #region agent log
+  agentDebugLog("H", "onesignal-client.js:disable:afterOptOut", "optOut completed", {
+    ...getSubscriptionSnapshot(OneSignal),
+  });
+  // #endregion
+
+  return true;
 }
 
 export async function withNetworkRetry(task, { attempts = 4, label = "request" } = {}) {
