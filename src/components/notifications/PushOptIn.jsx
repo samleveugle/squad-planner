@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button";
 import {
   disablePushSubscription,
   enablePushForPlayer,
+  getIosPwaRequirementMessage,
+  getOneSignalInstance,
+  initializeOneSignal,
   isOneSignalSupportedHost,
-  loadOneSignalScript,
   waitForOneSignal,
 } from "@/lib/onesignal-client";
 import { Bell, BellOff, Loader2 } from "lucide-react";
@@ -17,7 +19,7 @@ import { Bell, BellOff, Loader2 } from "lucide-react";
 export function PushOptIn({ currentPlayer }) {
   const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
   const [supportedHost, setSupportedHost] = useState(false);
-  const [sdkReady, setSdkReady] = useState(false);
+  const [sdkStatus, setSdkStatus] = useState("loading");
   const [enabled, setEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -47,25 +49,56 @@ export function PushOptIn({ currentPlayer }) {
   useEffect(() => {
     if (!appId || !currentPlayer.isSquadPlayer || !supportedHost) {
       setLoading(false);
+      setSdkStatus("idle");
       return;
     }
 
     loadPreference();
-    loadOneSignalScript();
+
+    const iosRequirement = getIosPwaRequirementMessage();
+
+    if (iosRequirement) {
+      setSdkStatus("unsupported");
+      setMessage(iosRequirement);
+      setMessageTone("error");
+      return;
+    }
+
+    if (getOneSignalInstance()) {
+      setSdkStatus("ready");
+      return;
+    }
 
     function handleReady() {
-      setSdkReady(true);
+      setSdkStatus("ready");
+      setMessage("");
+      setMessageTone("muted");
+    }
+
+    function handleError(event) {
+      setSdkStatus("error");
+      setMessage(event.detail?.message ?? "Pushdienst kon niet starten.");
+      setMessageTone("error");
     }
 
     window.addEventListener("onesignal-ready", handleReady);
+    window.addEventListener("onesignal-error", handleError);
 
-    waitForOneSignal(15000)
-      .then(() => setSdkReady(true))
-      .catch(() => {
-        setSdkReady(false);
-      });
+    const timeout = window.setTimeout(() => {
+      if (!getOneSignalInstance()) {
+        setSdkStatus("error");
+        setMessage(
+          "Pushdienst startte niet. Sluit de app, open opnieuw vanaf je beginscherm en probeer opnieuw."
+        );
+        setMessageTone("error");
+      }
+    }, 22000);
 
-    return () => window.removeEventListener("onesignal-ready", handleReady);
+    return () => {
+      window.removeEventListener("onesignal-ready", handleReady);
+      window.removeEventListener("onesignal-error", handleError);
+      window.clearTimeout(timeout);
+    };
   }, [appId, currentPlayer.id, currentPlayer.isSquadPlayer, loadPreference, supportedHost]);
 
   if (!appId || !currentPlayer.isSquadPlayer) {
@@ -90,10 +123,11 @@ export function PushOptIn({ currentPlayer }) {
     setMessageTone("muted");
 
     try {
-      const OneSignal = await waitForOneSignal();
+      let OneSignal = getOneSignalInstance();
 
       if (!OneSignal) {
-        throw new Error("Pushdienst is niet beschikbaar. Vernieuw de pagina.");
+        OneSignal = await initializeOneSignal(appId, currentPlayer.id);
+        setSdkStatus("ready");
       }
 
       await enablePushForPlayer(OneSignal, currentPlayer.id);
@@ -105,10 +139,12 @@ export function PushOptIn({ currentPlayer }) {
       }
 
       setEnabled(true);
+      setSdkStatus("ready");
       setMessageTone("success");
       setMessage("Meldingen staan aan. Je krijgt enkel een herinnering als je beschikbaarheid nog ontbreekt.");
     } catch (error) {
       setEnabled(false);
+      setSdkStatus("error");
       setMessageTone("error");
       setMessage(error?.message ?? "Kon meldingen niet inschakelen.");
     } finally {
@@ -123,10 +159,7 @@ export function PushOptIn({ currentPlayer }) {
 
     try {
       const OneSignal = await waitForOneSignal();
-
-      if (OneSignal) {
-        await disablePushSubscription(OneSignal);
-      }
+      await disablePushSubscription(OneSignal);
 
       const result = await setPushEnabled(false);
 
@@ -147,6 +180,15 @@ export function PushOptIn({ currentPlayer }) {
 
   const statusLabel = loading ? "Laden..." : enabled ? "Aan" : "Uit";
   const statusVariant = enabled ? "present" : "outline";
+  const canClickEnable =
+    !busy && (sdkStatus === "ready" || sdkStatus === "error");
+  const enableLabel = busy
+    ? "Bezig..."
+    : sdkStatus === "loading"
+      ? "Push laden..."
+      : sdkStatus === "error"
+        ? "Opnieuw proberen"
+        : "Meldingen aan";
 
   return (
     <div className="rounded-lg border bg-card px-4 py-3">
@@ -154,9 +196,7 @@ export function PushOptIn({ currentPlayer }) {
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-medium">Beschikbaarheidsherinnering</p>
-            {!loading && (
-              <Badge variant={statusVariant}>{statusLabel}</Badge>
-            )}
+            {!loading && <Badge variant={statusVariant}>{statusLabel}</Badge>}
           </div>
           <p className="text-xs text-muted-foreground">
             Zondag om 20:00, enkel als je nog niet alles hebt ingevuld voor komende week.
@@ -177,14 +217,13 @@ export function PushOptIn({ currentPlayer }) {
             {busy ? "Bezig..." : "Meldingen uit"}
           </Button>
         ) : (
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleEnable}
-            disabled={busy || !sdkReady}
-          >
-            {busy ? <Loader2 className="animate-spin" /> : <Bell />}
-            {busy ? "Bezig..." : sdkReady ? "Meldingen aan" : "Laden..."}
+          <Button type="button" size="sm" onClick={handleEnable} disabled={!canClickEnable}>
+            {busy || sdkStatus === "loading" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Bell />
+            )}
+            {enableLabel}
           </Button>
         )}
       </div>

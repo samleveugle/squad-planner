@@ -209,6 +209,10 @@ Voer `supabase/migrations/003_push_notifications.sql` uit in Supabase → **SQL 
 
 > **Lokaal (`localhost`):** OneSignal staat standaard enkel toe op je live domein. De app laadt OneSignal lokaal niet (geen console error). Wil je lokaal testen? Voeg `http://localhost:3000` toe in OneSignal → Web Configuration → en zet `NEXT_PUBLIC_ONESIGNAL_ALLOW_LOCALHOST=true` in `.env.local`.
 
+> **iPhone:** push werkt enkel via de **PWA op je beginscherm** (Safari → Deel → Zet op beginscherm). Open de app vandaar, niet via Safari-tab. De app bevat `public/OneSignalSDKWorker.js` (service worker) — nodig voor iOS/Android push.
+
+> **Android:** werkt in Chrome (browser of PWA). Geef toestemming wanneer de browser daarom vraagt.
+
 #### 3. Environment variables
 In `.env.local` (lokaal) en Vercel → **Environment Variables**:
 

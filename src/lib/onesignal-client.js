@@ -32,6 +32,56 @@ export function isOneSignalSupportedHost(hostname = null) {
   return currentHost === siteHostname;
 }
 
+export function getPushEnvironment() {
+  if (typeof window === "undefined") {
+    return {
+      platform: "unknown",
+      isIos: false,
+      isAndroid: false,
+      isStandalonePwa: false,
+    };
+  }
+
+  const userAgent = window.navigator.userAgent;
+  const isIos =
+    /iPad|iPhone|iPod/.test(userAgent) ||
+    (window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/i.test(userAgent);
+  const isStandalonePwa =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+
+  let platform = "desktop";
+
+  if (isIos) {
+    platform = "ios";
+  } else if (isAndroid) {
+    platform = "android";
+  }
+
+  return { platform, isIos, isAndroid, isStandalonePwa };
+}
+
+export function getIosPwaRequirementMessage() {
+  const { isIos, isStandalonePwa } = getPushEnvironment();
+
+  if (isIos && !isStandalonePwa) {
+    return "Op iPhone werken pushmeldingen enkel als je Squad Planner toevoegt aan je beginscherm (Safari → Deel → Zet op beginscherm) en de app vandaar opent.";
+  }
+
+  return null;
+}
+
+function getUnsupportedPushMessage() {
+  const iosMessage = getIosPwaRequirementMessage();
+
+  if (iosMessage) {
+    return iosMessage;
+  }
+
+  return "Pushmeldingen worden niet ondersteund in deze browser. Probeer Chrome op Android of de app via je iPhone-beginscherm.";
+}
+
 function ensureOneSignalDeferred() {
   if (typeof window === "undefined") {
     return null;
@@ -43,37 +93,127 @@ function ensureOneSignalDeferred() {
 
 export function loadOneSignalScript() {
   if (typeof document === "undefined") {
-    return;
+    return Promise.resolve(false);
   }
 
-  if (document.getElementById("onesignal-sdk")) {
-    return;
-  }
+  const existing = document.getElementById("onesignal-sdk");
 
-  const script = document.createElement("script");
-  script.id = "onesignal-sdk";
-  script.src = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
-  script.defer = true;
-  document.head.appendChild(script);
-}
-
-export function waitForOneSignal(timeoutMs = 12000) {
-  const deferred = ensureOneSignalDeferred();
-
-  if (!deferred) {
-    return Promise.resolve(null);
+  if (existing) {
+    return Promise.resolve(true);
   }
 
   return new Promise((resolve, reject) => {
-    const timer = window.setTimeout(() => {
-      reject(new Error("Pushdienst reageert niet. Vernieuw de pagina en probeer opnieuw."));
-    }, timeoutMs);
-
-    deferred.push(async (OneSignal) => {
-      window.clearTimeout(timer);
-      resolve(OneSignal);
-    });
+    const script = document.createElement("script");
+    script.id = "onesignal-sdk";
+    script.src = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
+    script.defer = true;
+    script.onload = () => resolve(true);
+    script.onerror = () =>
+      reject(new Error("Kon pushdienst niet laden. Controleer je internetverbinding."));
+    document.head.appendChild(script);
   });
+}
+
+let oneSignalInstance = null;
+let oneSignalInitPromise = null;
+let oneSignalInitKey = null;
+
+export function getOneSignalInstance() {
+  return oneSignalInstance;
+}
+
+export function resetOneSignalInitForTests() {
+  oneSignalInstance = null;
+  oneSignalInitPromise = null;
+  oneSignalInitKey = null;
+}
+
+export async function initializeOneSignal(appId, playerId) {
+  const initKey = `${appId}:${playerId}`;
+
+  if (oneSignalInstance && oneSignalInitKey === initKey) {
+    return oneSignalInstance;
+  }
+
+  if (oneSignalInitPromise && oneSignalInitKey === initKey) {
+    return oneSignalInitPromise;
+  }
+
+  const iosRequirement = getIosPwaRequirementMessage();
+
+  if (iosRequirement) {
+    throw new Error(iosRequirement);
+  }
+
+  oneSignalInitKey = initKey;
+  oneSignalInitPromise = (async () => {
+    await loadOneSignalScript();
+
+    const OneSignal = await new Promise((resolve, reject) => {
+      const deferred = ensureOneSignalDeferred();
+
+      if (!deferred) {
+        reject(new Error("Pushdienst is niet beschikbaar."));
+        return;
+      }
+
+      const timer = window.setTimeout(() => {
+        reject(
+          new Error(
+            "Pushdienst reageert niet. Sluit de app volledig, open opnieuw vanaf je beginscherm en probeer opnieuw."
+          )
+        );
+      }, 20000);
+
+      deferred.push(async (sdk) => {
+        window.clearTimeout(timer);
+        resolve(sdk);
+      });
+    });
+
+    const pushSupported =
+      typeof OneSignal.Notifications?.isPushSupported === "function"
+        ? OneSignal.Notifications.isPushSupported()
+        : true;
+
+    if (!pushSupported) {
+      throw new Error(getUnsupportedPushMessage());
+    }
+
+    await OneSignal.init({
+      appId,
+      notifyButton: {
+        enable: false,
+      },
+      serviceWorkerPath: "/OneSignalSDKWorker.js",
+    });
+
+    await OneSignal.login(playerId);
+    oneSignalInstance = OneSignal;
+
+    return OneSignal;
+  })();
+
+  try {
+    return await oneSignalInitPromise;
+  } catch (error) {
+    oneSignalInitPromise = null;
+    oneSignalInitKey = null;
+    oneSignalInstance = null;
+    throw error;
+  }
+}
+
+export async function waitForOneSignal() {
+  if (oneSignalInstance) {
+    return oneSignalInstance;
+  }
+
+  if (oneSignalInitPromise) {
+    return oneSignalInitPromise;
+  }
+
+  throw new Error("Pushdienst is nog niet gestart. Vernieuw de pagina.");
 }
 
 export async function isPushSubscribed(OneSignal) {
@@ -101,12 +241,12 @@ export async function enablePushForPlayer(OneSignal, playerId) {
 
     if (nativePermission === "denied") {
       throw new Error(
-        "Meldingen werden geblokkeerd. Zet ze aan in je browser- of telefooninstellingen."
+        "Meldingen werden geblokkeerd. Zet ze aan in Instellingen → Squad Planner → Meldingen."
       );
     }
 
     throw new Error(
-      "Kon pushmeldingen niet activeren. Probeer opnieuw of geef toestemming in je browser."
+      "Kon pushmeldingen niet activeren. Geef toestemming wanneer je browser daarom vraagt."
     );
   }
 
