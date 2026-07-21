@@ -6,10 +6,8 @@ import { getPushPreference, setPushEnabled } from "@/app/actions/push";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  agentDebugLog,
   disablePushSubscription,
   enablePushForPlayer,
-  getAgentDebugLogs,
   getIosPwaRequirementMessage,
   getOneSignalInstance,
   initializeOneSignal,
@@ -34,7 +32,6 @@ export function PushOptIn({ currentPlayer }) {
     try {
       const result = await withNetworkRetry(() => getPushPreference(), {
         attempts: 4,
-        label: "getPushPreference",
       });
 
       if (!result.success && result.error) {
@@ -79,14 +76,6 @@ export function PushOptIn({ currentPlayer }) {
       return;
     }
 
-    // #region agent log
-    agentDebugLog("C", "PushOptIn.jsx:effect", "PushOptIn sdk effect run", {
-      hasInstance: !!getOneSignalInstance(),
-      visibility: document.visibilityState,
-      online: navigator.onLine,
-    });
-    // #endregion
-
     function markReady() {
       if (cancelled) {
         return;
@@ -107,7 +96,7 @@ export function PushOptIn({ currentPlayer }) {
       setMessageTone("error");
     }
 
-    async function ensureSdk(reason) {
+    async function ensureSdk() {
       if (getOneSignalInstance()) {
         markReady();
         return;
@@ -115,56 +104,26 @@ export function PushOptIn({ currentPlayer }) {
 
       setSdkStatus((current) => (current === "ready" ? current : "loading"));
 
-      // #region agent log
-      agentDebugLog("C", "PushOptIn.jsx:ensureSdk", "ensuring sdk", { reason });
-      // #endregion
-
       try {
         await initializeOneSignal(appId, currentPlayer.id);
         markReady();
         window.dispatchEvent(new CustomEvent("onesignal-ready"));
       } catch (error) {
-        // #region agent log
-        agentDebugLog("C", "PushOptIn.jsx:ensureSdkError", "ensure sdk failed", {
-          reason,
-          error: error?.message ?? String(error),
-        });
-        // #endregion
         markError(error?.message ?? "Pushdienst kon niet starten.");
       }
     }
 
     function handleReady() {
-      // #region agent log
-      agentDebugLog("C", "PushOptIn.jsx:handleReady", "received onesignal-ready", {
-        hasInstance: !!getOneSignalInstance(),
-      });
-      // #endregion
       markReady();
     }
 
     function handleError(event) {
-      // #region agent log
-      agentDebugLog("C", "PushOptIn.jsx:handleError", "received onesignal-error", {
-        error: event.detail?.message ?? null,
-      });
-      // #endregion
       if (!getOneSignalInstance()) {
         markError(event.detail?.message ?? "Pushdienst kon niet starten.");
       }
     }
 
-    function handleResume(event) {
-      // #region agent log
-      agentDebugLog("E", "PushOptIn.jsx:resume", "resume event", {
-        type: event?.type,
-        persisted: !!event?.persisted,
-        hasInstance: !!getOneSignalInstance(),
-        visibility: document.visibilityState,
-        online: navigator.onLine,
-      });
-      // #endregion
-
+    function handleResume() {
       if (document.visibilityState && document.visibilityState !== "visible") {
         return;
       }
@@ -172,7 +131,7 @@ export function PushOptIn({ currentPlayer }) {
       loadPreference();
 
       if (!getOneSignalInstance()) {
-        ensureSdk(event?.type ?? "resume");
+        ensureSdk();
       } else {
         markReady();
       }
@@ -184,17 +143,11 @@ export function PushOptIn({ currentPlayer }) {
     window.addEventListener("online", handleResume);
     document.addEventListener("visibilitychange", handleResume);
 
-    ensureSdk("mount");
+    ensureSdk();
 
     const timeout = window.setTimeout(() => {
       if (!getOneSignalInstance() && !cancelled) {
-        // #region agent log
-        agentDebugLog("C", "PushOptIn.jsx:timeout", "22s sdk timeout — retrying once", {
-          visibility: document.visibilityState,
-          online: navigator.onLine,
-        });
-        // #endregion
-        ensureSdk("timeout-retry");
+        ensureSdk();
       }
     }, 22000);
 
@@ -226,36 +179,18 @@ export function PushOptIn({ currentPlayer }) {
   }
 
   async function handleEnable() {
-    // #region agent log
-    agentDebugLog("G", "PushOptIn.jsx:handleEnable:start", "enable clicked", {
-      busy,
-      enabled,
-      sdkStatus,
-    });
-    // #endregion
-
     setBusy(true);
     setMessage("");
     setMessageTone("muted");
 
     try {
-      // #region agent log
-      agentDebugLog("G", "PushOptIn.jsx:handleEnable:init", "await initializeOneSignal", {});
-      // #endregion
       const OneSignal = await initializeOneSignal(appId, currentPlayer.id);
       setSdkStatus("ready");
 
-      // #region agent log
-      agentDebugLog("G", "PushOptIn.jsx:handleEnable:enablePush", "await enablePushForPlayer", {});
-      // #endregion
       await enablePushForPlayer(OneSignal, currentPlayer.id);
 
-      // #region agent log
-      agentDebugLog("G", "PushOptIn.jsx:handleEnable:db", "await setPushEnabled(true)", {});
-      // #endregion
       const result = await withNetworkRetry(() => setPushEnabled(true), {
         attempts: 4,
-        label: "setPushEnabled",
       });
 
       if (!result.success) {
@@ -268,60 +203,29 @@ export function PushOptIn({ currentPlayer }) {
       setMessage(
         "Meldingen staan aan. Je krijgt enkel een herinnering als je beschikbaarheid nog ontbreekt."
       );
-      // #region agent log
-      agentDebugLog("G", "PushOptIn.jsx:handleEnable:done", "enable success", {});
-      // #endregion
     } catch (error) {
-      // #region agent log
-      agentDebugLog("G", "PushOptIn.jsx:handleEnable:error", "enable failed", {
-        error: error?.message ?? String(error),
-      });
-      // #endregion
       setEnabled(false);
       setSdkStatus("error");
       setMessageTone("error");
       setMessage(error?.message ?? "Kon meldingen niet inschakelen.");
     } finally {
-      // #region agent log
-      agentDebugLog("G", "PushOptIn.jsx:handleEnable:finally", "clearing busy", {});
-      // #endregion
       setBusy(false);
     }
   }
 
   async function handleDisable() {
-    // #region agent log
-    agentDebugLog("H", "PushOptIn.jsx:handleDisable:start", "disable clicked", {
-      busy,
-      enabled,
-      sdkStatus,
-      hasInstance: !!getOneSignalInstance(),
-    });
-    // #endregion
-
     setBusy(true);
     setMessage("");
     setMessageTone("muted");
 
     try {
-      // Use the same init path as enable — waitForOneSignal can hang on a stuck initPromise.
-      // #region agent log
-      agentDebugLog("H", "PushOptIn.jsx:handleDisable:init", "await initializeOneSignal", {});
-      // #endregion
       const OneSignal = await initializeOneSignal(appId, currentPlayer.id);
       setSdkStatus("ready");
 
-      // #region agent log
-      agentDebugLog("H", "PushOptIn.jsx:handleDisable:optOut", "await disablePushSubscription", {});
-      // #endregion
       await disablePushSubscription(OneSignal, currentPlayer.id);
 
-      // #region agent log
-      agentDebugLog("H", "PushOptIn.jsx:handleDisable:db", "await setPushEnabled(false)", {});
-      // #endregion
       const result = await withNetworkRetry(() => setPushEnabled(false), {
         attempts: 4,
-        label: "setPushEnabled",
       });
 
       if (!result.success) {
@@ -331,21 +235,10 @@ export function PushOptIn({ currentPlayer }) {
       setEnabled(false);
       setMessageTone("success");
       setMessage("Meldingen staan uit.");
-      // #region agent log
-      agentDebugLog("H", "PushOptIn.jsx:handleDisable:done", "disable success", {});
-      // #endregion
     } catch (error) {
-      // #region agent log
-      agentDebugLog("H", "PushOptIn.jsx:handleDisable:error", "disable failed", {
-        error: error?.message ?? String(error),
-      });
-      // #endregion
       setMessageTone("error");
       setMessage(error?.message ?? "Kon meldingen niet uitschakelen.");
     } finally {
-      // #region agent log
-      agentDebugLog("H", "PushOptIn.jsx:handleDisable:finally", "clearing busy", {});
-      // #endregion
       setBusy(false);
     }
   }
@@ -406,27 +299,6 @@ export function PushOptIn({ currentPlayer }) {
           {message}
         </p>
       )}
-
-      {/* #region agent log */}
-      {messageTone === "error" && (
-        <button
-          type="button"
-          className="mt-2 text-xs underline text-muted-foreground"
-          onClick={async () => {
-            const logs = getAgentDebugLogs();
-            const text = JSON.stringify(logs, null, 2);
-            try {
-              await navigator.clipboard.writeText(text);
-              setMessage(`${message}\n\n[Debuglog gekopieerd — plak in chat]`);
-            } catch {
-              setMessage(`${message}\n\n[Debuglog:]\n${text.slice(0, 1500)}`);
-            }
-          }}
-        >
-          Kopieer debuglog
-        </button>
-      )}
-      {/* #endregion */}
     </div>
   );
 }

@@ -225,16 +225,36 @@ CRON_SECRET=...   # alleen ASCII! bv. output van: openssl rand -hex 32
 Redeploy na toevoegen op Vercel.
 
 #### 4. Vercel Cron
-`vercel.json` triggert **1× per dag** om ~19:00 UTC (Vercel Hobby-limiet). De handler stuurt enkel op **zondagavond** (Brussels) de push.
+`vercel.json` triggert **1× per dag** om ~19:00 UTC (Vercel Hobby-limiet). Die run:
+1. synchroniseert de **RBFA-wedstrijdkalender** (FC Hoje)
+2. stuurt enkel op **zondagavond** (Brussels) de beschikbaarheids-push
 
 > **Hobby-plan:** cron mag maximaal 1× per dag draaien. Op Pro kan het schema nauwkeuriger (bv. elke 15 min op zondag).
 
 Zet `CRON_SECRET` in Vercel; het cron-job stuurt `Authorization: Bearer <CRON_SECRET>` mee.
 
+Optioneel: `RBFA_TEAM_ID=360260` (default is FC Hoje).
+
+Handmatige RBFA-sync (alleen kalender):
+```bash
+curl -H "Authorization: Bearer JOUW_CRON_SECRET" "https://squad-planner-beige.vercel.app/api/cron/rbfa-calendar"
+```
+
+Of in de app: admin → **Agenda** → **RBFA kalender sync**.
+
 #### 5. Handmatig testen (zonder te wachten op zondag)
 ```bash
 curl -H "Authorization: Bearer JOUW_CRON_SECRET" "https://squad-planner-beige.vercel.app/api/cron/availability-reminder?force=1"
 ```
+
+### Test-aanwezigheden wissen
+Voor live gebruik alle antwoorden/line-ups/stats legen (spelers & events blijven):
+
+```bash
+npm run db:reset-test-data
+```
+
+Of plak `supabase/migrations/004_reset_test_responses.sql` in Supabase → SQL Editor.
 
 ### Wanneer wordt er gepusht?
 - **Wanneer:** zondag 20:00 (Brussels)

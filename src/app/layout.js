@@ -15,9 +15,18 @@ export const metadata = {
   title: "Squad Planner",
   description: "Voetbalkalender en beschikbaarheid voor je ploeg",
   manifest: "/manifest.json",
+  themeColor: "#0B1221",
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   appleWebApp: {
     capable: true,
     title: "Squad Planner",
+    statusBarStyle: "black-translucent",
   },
 };
 

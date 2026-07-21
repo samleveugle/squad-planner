@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { createEvent, deleteEvent, updateEvent } from "@/app/actions/events";
+import { syncRbfaCalendarAction } from "@/app/actions/rbfa-sync";
 import { WeekNavigator } from "@/components/calendar/WeekNavigator";
 import { Button } from "@/components/ui/button";
 import {
@@ -272,6 +273,8 @@ function EventRow({ event, onUpdated, onDeleted }) {
 export function EventsManager({ events, onEventsChange, weekStart, onWeekChange }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [localEvents, setLocalEvents] = useState(events);
+  const [isSyncingRbfa, setIsSyncingRbfa] = useState(false);
+  const [rbfaMessage, setRbfaMessage] = useState(null);
 
   useEffect(() => {
     setLocalEvents(events);
@@ -309,16 +312,53 @@ export function EventsManager({ events, onEventsChange, weekStart, onWeekChange 
     syncEvents(localEvents.filter((event) => event.id !== eventId));
   }
 
+  async function handleRbfaSync() {
+    setIsSyncingRbfa(true);
+    setRbfaMessage(null);
+
+    const result = await syncRbfaCalendarAction();
+
+    if (result.success) {
+      if (result.events) {
+        syncEvents(result.events);
+      }
+      setRbfaMessage(
+        `RBFA sync klaar: ${result.inserted} nieuw, ${result.updated} bijgewerkt, ${result.unchanged} ongewijzigd (${result.fetched} wedstrijden).`
+      );
+    } else {
+      setRbfaMessage(result.error ?? "RBFA sync mislukt.");
+    }
+
+    setIsSyncingRbfa(false);
+  }
+
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">Agenda</h2>
-        {!showAddForm && (
-          <Button type="button" size="sm" onClick={() => setShowAddForm(true)}>
-            Event toevoegen
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={isSyncingRbfa}
+            onClick={handleRbfaSync}
+          >
+            {isSyncingRbfa ? "RBFA synchroniseren…" : "RBFA kalender sync"}
           </Button>
-        )}
+          {!showAddForm && (
+            <Button type="button" size="sm" onClick={() => setShowAddForm(true)}>
+              Event toevoegen
+            </Button>
+          )}
+        </div>
       </div>
+
+      {rbfaMessage && (
+        <p className="rounded-lg border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+          {rbfaMessage}
+        </p>
+      )}
 
       <WeekNavigator weekStart={weekStart} onWeekChange={onWeekChange} />
 
@@ -326,7 +366,7 @@ export function EventsManager({ events, onEventsChange, weekStart, onWeekChange 
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Events deze week</CardTitle>
           <CardDescription>
-            Trainingen en wedstrijden toevoegen, bewerken of verwijderen.
+            Trainingen manueel beheren; wedstrijden ook via RBFA sync (FC Hoje).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">

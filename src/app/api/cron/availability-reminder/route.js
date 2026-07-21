@@ -10,6 +10,7 @@ import {
 import { isAvailabilityReminderWindow } from "@/lib/brussels-time";
 import { rowToPlayer } from "@/lib/players-db";
 import { sendPushToExternalIds } from "@/lib/onesignal";
+import { syncRbfaCalendar } from "@/lib/rbfa-sync";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 function isAuthorized(request) {
@@ -30,11 +31,27 @@ export async function GET(request) {
 
   const { searchParams } = new URL(request.url);
   const force = searchParams.get("force") === "1";
+  const skipRbfa = searchParams.get("skipRbfa") === "1";
+
+  let rbfaSync = null;
+
+  if (!skipRbfa) {
+    try {
+      rbfaSync = await syncRbfaCalendar();
+    } catch (error) {
+      console.error("[availability-reminder] RBFA sync failed:", error);
+      rbfaSync = {
+        success: false,
+        error: error?.message ?? "RBFA sync mislukt.",
+      };
+    }
+  }
 
   if (!force && !isAvailabilityReminderWindow()) {
     return NextResponse.json({
       skipped: true,
       reason: "Buiten het venster zondag 20:00 (Europe/Brussels).",
+      rbfaSync,
     });
   }
 
@@ -59,6 +76,7 @@ export async function GET(request) {
         skipped: true,
         reason: "Herinnering voor deze week is al verstuurd.",
         weekStart: weekStartKey,
+        rbfaSync,
       });
     }
 
@@ -126,6 +144,7 @@ export async function GET(request) {
         weekStart: weekStartKey,
         recipientCount: 0,
         message: "Geen spelers met openstaande beschikbaarheid en actieve push.",
+        rbfaSync,
       });
     }
 
@@ -151,12 +170,14 @@ export async function GET(request) {
       recipientCount: recipientIds.length,
       oneSignalNotificationId: pushResult.id,
       recipients: pushResult.recipients,
+      rbfaSync,
     });
   } catch (error) {
     return NextResponse.json(
       {
         success: false,
         error: error?.message ?? "Kon beschikbaarheidsherinnering niet versturen.",
+        rbfaSync,
       },
       { status: 500 }
     );

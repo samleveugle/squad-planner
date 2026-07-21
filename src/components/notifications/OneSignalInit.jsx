@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 
 import {
-  agentDebugLog,
   getOneSignalInstance,
   initializeOneSignal,
   isOneSignalSupportedHost,
@@ -24,7 +23,7 @@ export function OneSignalInit({ playerId }) {
 
     let cancelled = false;
 
-    async function boot(reason) {
+    async function boot() {
       if (cancelled) {
         return;
       }
@@ -40,36 +39,16 @@ export function OneSignalInit({ playerId }) {
 
       bootingRef.current = true;
 
-      // #region agent log
-      agentDebugLog("D", "OneSignalInit.jsx:start", "OneSignalInit starting initializeOneSignal", {
-        playerId,
-        reason,
-      });
-      // #endregion
-
       try {
         await initializeOneSignal(appId, playerId);
         if (cancelled) {
           return;
         }
-        // #region agent log
-        agentDebugLog("C", "OneSignalInit.jsx:ready", "dispatching onesignal-ready", {
-          playerId,
-          reason,
-        });
-        // #endregion
         window.dispatchEvent(new CustomEvent("onesignal-ready"));
       } catch (error) {
         if (cancelled) {
           return;
         }
-        // #region agent log
-        agentDebugLog("B", "OneSignalInit.jsx:error", "dispatching onesignal-error", {
-          playerId,
-          reason,
-          error: error?.message ?? String(error),
-        });
-        // #endregion
         window.dispatchEvent(
           new CustomEvent("onesignal-error", {
             detail: { message: error?.message ?? "OneSignal init mislukt" },
@@ -82,17 +61,17 @@ export function OneSignalInit({ playerId }) {
 
     function handleResume() {
       if (document.visibilityState === "visible" && !getOneSignalInstance()) {
-        boot("resume");
+        boot();
       }
     }
 
     function handleOnline() {
       if (!getOneSignalInstance()) {
-        boot("online");
+        boot();
       }
     }
 
-    boot("mount");
+    boot();
 
     window.addEventListener("pageshow", handleResume);
     document.addEventListener("visibilitychange", handleResume);
