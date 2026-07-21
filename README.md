@@ -207,6 +207,8 @@ Voer `supabase/migrations/003_push_notifications.sql` uit in Supabase → **SQL 
 4. Kopieer **App ID** → `NEXT_PUBLIC_ONESIGNAL_APP_ID`
 5. **Settings → Keys & IDs** → kopieer **REST API Key** → `ONESIGNAL_REST_API_KEY`
 
+> **Lokaal (`localhost`):** OneSignal staat standaard enkel toe op je live domein. De app laadt OneSignal lokaal niet (geen console error). Wil je lokaal testen? Voeg `http://localhost:3000` toe in OneSignal → Web Configuration → en zet `NEXT_PUBLIC_ONESIGNAL_ALLOW_LOCALHOST=true` in `.env.local`.
+
 #### 3. Environment variables
 In `.env.local` (lokaal) en Vercel → **Environment Variables**:
 
