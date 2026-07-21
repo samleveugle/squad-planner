@@ -15,6 +15,7 @@ import {
   initializeOneSignal,
   isOneSignalSupportedHost,
   waitForOneSignal,
+  withNetworkRetry,
 } from "@/lib/onesignal-client";
 import { Bell, BellOff, Loader2 } from "lucide-react";
 
@@ -30,18 +31,29 @@ export function PushOptIn({ currentPlayer }) {
 
   const loadPreference = useCallback(async () => {
     setLoading(true);
-    const result = await getPushPreference();
 
-    if (!result.success && result.error) {
+    try {
+      const result = await withNetworkRetry(() => getPushPreference(), {
+        attempts: 4,
+        label: "getPushPreference",
+      });
+
+      if (!result.success && result.error) {
+        setEnabled(false);
+        setMessage(result.error);
+        setMessageTone("error");
+        setLoading(false);
+        return;
+      }
+
+      setEnabled(result.enabled ?? false);
+      setLoading(false);
+    } catch (error) {
       setEnabled(false);
-      setMessage(result.error);
+      setMessage(error?.message ?? "Kon meldingsvoorkeur niet laden.");
       setMessageTone("error");
       setLoading(false);
-      return;
     }
-
-    setEnabled(result.enabled ?? false);
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -54,6 +66,8 @@ export function PushOptIn({ currentPlayer }) {
       setSdkStatus("idle");
       return;
     }
+
+    let cancelled = false;
 
     loadPreference();
 
@@ -70,12 +84,55 @@ export function PushOptIn({ currentPlayer }) {
     agentDebugLog("C", "PushOptIn.jsx:effect", "PushOptIn sdk effect run", {
       hasInstance: !!getOneSignalInstance(),
       visibility: document.visibilityState,
+      online: navigator.onLine,
     });
     // #endregion
 
-    if (getOneSignalInstance()) {
+    function markReady() {
+      if (cancelled) {
+        return;
+      }
       setSdkStatus("ready");
-      return;
+      setMessage((current) =>
+        current.startsWith("Pushdienst") || current.includes("NetworkError") ? "" : current
+      );
+      setMessageTone("muted");
+    }
+
+    function markError(errorMessage) {
+      if (cancelled) {
+        return;
+      }
+      setSdkStatus("error");
+      setMessage(errorMessage ?? "Pushdienst kon niet starten.");
+      setMessageTone("error");
+    }
+
+    async function ensureSdk(reason) {
+      if (getOneSignalInstance()) {
+        markReady();
+        return;
+      }
+
+      setSdkStatus((current) => (current === "ready" ? current : "loading"));
+
+      // #region agent log
+      agentDebugLog("C", "PushOptIn.jsx:ensureSdk", "ensuring sdk", { reason });
+      // #endregion
+
+      try {
+        await initializeOneSignal(appId, currentPlayer.id);
+        markReady();
+        window.dispatchEvent(new CustomEvent("onesignal-ready"));
+      } catch (error) {
+        // #region agent log
+        agentDebugLog("C", "PushOptIn.jsx:ensureSdkError", "ensure sdk failed", {
+          reason,
+          error: error?.message ?? String(error),
+        });
+        // #endregion
+        markError(error?.message ?? "Pushdienst kon niet starten.");
+      }
     }
 
     function handleReady() {
@@ -84,9 +141,7 @@ export function PushOptIn({ currentPlayer }) {
         hasInstance: !!getOneSignalInstance(),
       });
       // #endregion
-      setSdkStatus("ready");
-      setMessage("");
-      setMessageTone("muted");
+      markReady();
     }
 
     function handleError(event) {
@@ -95,55 +150,62 @@ export function PushOptIn({ currentPlayer }) {
         error: event.detail?.message ?? null,
       });
       // #endregion
-      setSdkStatus("error");
-      setMessage(event.detail?.message ?? "Pushdienst kon niet starten.");
-      setMessageTone("error");
+      if (!getOneSignalInstance()) {
+        markError(event.detail?.message ?? "Pushdienst kon niet starten.");
+      }
     }
 
-    function handlePageShow(event) {
+    function handleResume(event) {
       // #region agent log
-      agentDebugLog("E", "PushOptIn.jsx:pageshow", "pageshow fired", {
-        persisted: !!event.persisted,
+      agentDebugLog("E", "PushOptIn.jsx:resume", "resume event", {
+        type: event?.type,
+        persisted: !!event?.persisted,
         hasInstance: !!getOneSignalInstance(),
         visibility: document.visibilityState,
+        online: navigator.onLine,
       });
       // #endregion
-    }
 
-    function handleVisibility() {
-      // #region agent log
-      agentDebugLog("E", "PushOptIn.jsx:visibilitychange", "visibilitychange", {
-        visibility: document.visibilityState,
-        hasInstance: !!getOneSignalInstance(),
-      });
-      // #endregion
+      if (document.visibilityState && document.visibilityState !== "visible") {
+        return;
+      }
+
+      loadPreference();
+
+      if (!getOneSignalInstance()) {
+        ensureSdk(event?.type ?? "resume");
+      } else {
+        markReady();
+      }
     }
 
     window.addEventListener("onesignal-ready", handleReady);
     window.addEventListener("onesignal-error", handleError);
-    window.addEventListener("pageshow", handlePageShow);
-    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("pageshow", handleResume);
+    window.addEventListener("online", handleResume);
+    document.addEventListener("visibilitychange", handleResume);
+
+    ensureSdk("mount");
 
     const timeout = window.setTimeout(() => {
-      if (!getOneSignalInstance()) {
+      if (!getOneSignalInstance() && !cancelled) {
         // #region agent log
-        agentDebugLog("C", "PushOptIn.jsx:timeout", "22s sdk timeout fired", {
+        agentDebugLog("C", "PushOptIn.jsx:timeout", "22s sdk timeout — retrying once", {
           visibility: document.visibilityState,
+          online: navigator.onLine,
         });
         // #endregion
-        setSdkStatus("error");
-        setMessage(
-          "Pushdienst startte niet. Sluit de app, open opnieuw vanaf je beginscherm en probeer opnieuw."
-        );
-        setMessageTone("error");
+        ensureSdk("timeout-retry");
       }
     }, 22000);
 
     return () => {
+      cancelled = true;
       window.removeEventListener("onesignal-ready", handleReady);
       window.removeEventListener("onesignal-error", handleError);
-      window.removeEventListener("pageshow", handlePageShow);
-      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("pageshow", handleResume);
+      window.removeEventListener("online", handleResume);
+      document.removeEventListener("visibilitychange", handleResume);
       window.clearTimeout(timeout);
     };
   }, [appId, currentPlayer.id, currentPlayer.isSquadPlayer, loadPreference, supportedHost]);
@@ -170,16 +232,15 @@ export function PushOptIn({ currentPlayer }) {
     setMessageTone("muted");
 
     try {
-      let OneSignal = getOneSignalInstance();
-
-      if (!OneSignal) {
-        OneSignal = await initializeOneSignal(appId, currentPlayer.id);
-        setSdkStatus("ready");
-      }
+      const OneSignal = await initializeOneSignal(appId, currentPlayer.id);
+      setSdkStatus("ready");
 
       await enablePushForPlayer(OneSignal, currentPlayer.id);
 
-      const result = await setPushEnabled(true);
+      const result = await withNetworkRetry(() => setPushEnabled(true), {
+        attempts: 4,
+        label: "setPushEnabled",
+      });
 
       if (!result.success) {
         throw new Error(result.error ?? "Kon voorkeur niet opslaan in database.");
@@ -188,7 +249,9 @@ export function PushOptIn({ currentPlayer }) {
       setEnabled(true);
       setSdkStatus("ready");
       setMessageTone("success");
-      setMessage("Meldingen staan aan. Je krijgt enkel een herinnering als je beschikbaarheid nog ontbreekt.");
+      setMessage(
+        "Meldingen staan aan. Je krijgt enkel een herinnering als je beschikbaarheid nog ontbreekt."
+      );
     } catch (error) {
       setEnabled(false);
       setSdkStatus("error");
@@ -208,7 +271,10 @@ export function PushOptIn({ currentPlayer }) {
       const OneSignal = await waitForOneSignal();
       await disablePushSubscription(OneSignal);
 
-      const result = await setPushEnabled(false);
+      const result = await withNetworkRetry(() => setPushEnabled(false), {
+        attempts: 4,
+        label: "setPushEnabled",
+      });
 
       if (!result.success) {
         throw new Error(result.error ?? "Kon voorkeur niet opslaan.");
@@ -227,8 +293,7 @@ export function PushOptIn({ currentPlayer }) {
 
   const statusLabel = loading ? "Laden..." : enabled ? "Aan" : "Uit";
   const statusVariant = enabled ? "present" : "outline";
-  const canClickEnable =
-    !busy && (sdkStatus === "ready" || sdkStatus === "error");
+  const canClickEnable = !busy && (sdkStatus === "ready" || sdkStatus === "error");
   const enableLabel = busy
     ? "Bezig..."
     : sdkStatus === "loading"
@@ -245,9 +310,7 @@ export function PushOptIn({ currentPlayer }) {
             <p className="text-sm font-medium">Herinnering</p>
             {!loading && <Badge variant={statusVariant}>{statusLabel}</Badge>}
           </div>
-          <p className="text-xs text-muted-foreground">
-            Elke zondag om 20:00.
-          </p>
+          <p className="text-xs text-muted-foreground">Elke zondag om 20:00.</p>
         </div>
 
         {loading ? (
@@ -265,11 +328,7 @@ export function PushOptIn({ currentPlayer }) {
           </Button>
         ) : (
           <Button type="button" size="sm" onClick={handleEnable} disabled={!canClickEnable}>
-            {busy || sdkStatus === "loading" ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              <Bell />
-            )}
+            {busy || sdkStatus === "loading" ? <Loader2 className="animate-spin" /> : <Bell />}
             {enableLabel}
           </Button>
         )}

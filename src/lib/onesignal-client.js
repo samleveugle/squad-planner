@@ -91,6 +91,78 @@ function ensureOneSignalDeferred() {
   return window.OneSignalDeferred;
 }
 
+function getPageState() {
+  if (typeof window === "undefined") {
+    return {
+      instance: null,
+      initPromise: null,
+      initKey: null,
+      initCompleted: false,
+    };
+  }
+
+  if (!window.__squadOneSignalState) {
+    window.__squadOneSignalState = {
+      instance: null,
+      initPromise: null,
+      initKey: null,
+      initCompleted: false,
+    };
+  }
+
+  return window.__squadOneSignalState;
+}
+
+function isTransientNetworkError(error) {
+  const message = `${error?.message ?? error ?? ""}`.toLowerCase();
+  const name = `${error?.name ?? ""}`.toLowerCase();
+
+  return (
+    name === "networkerror" ||
+    message.includes("networkerror") ||
+    message.includes("load failed") ||
+    message.includes("failed to fetch") ||
+    message.includes("network request failed") ||
+    message.includes("the internet connection appears to be offline")
+  );
+}
+
+function isAlreadyInitializedError(error) {
+  const message = `${error?.message ?? error ?? ""}`.toLowerCase();
+  return message.includes("already initialized");
+}
+
+function wait(ms) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+async function waitForOnline({ timeoutMs = 15000 } = {}) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  if (window.navigator.onLine !== false) {
+    return;
+  }
+
+  await new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      window.removeEventListener("online", onOnline);
+      reject(new Error("Geen internetverbinding. Probeer opnieuw."));
+    }, timeoutMs);
+
+    function onOnline() {
+      window.clearTimeout(timer);
+      window.removeEventListener("online", onOnline);
+      resolve();
+    }
+
+    window.addEventListener("online", onOnline);
+  });
+}
+
 // #region agent log
 function agentDebugLog(hypothesisId, location, message, data = {}) {
   if (typeof window === "undefined") {
@@ -98,7 +170,7 @@ function agentDebugLog(hypothesisId, location, message, data = {}) {
   }
   const payload = {
     sessionId: "c0a40f",
-    runId: "pre-fix",
+    runId: "post-fix",
     hypothesisId,
     location,
     message,
@@ -158,15 +230,20 @@ export function loadOneSignalScript() {
   const existing = document.getElementById("onesignal-sdk");
 
   if (existing) {
-    // #region agent log
-    agentDebugLog("A", "onesignal-client.js:loadOneSignalScript", "script tag already present", {
-      hasWindowOneSignal: typeof window.OneSignal !== "undefined",
-      deferredIsArray: Array.isArray(window.OneSignalDeferred),
-      deferredLen: window.OneSignalDeferred?.length ?? null,
-      pushIsNative: window.OneSignalDeferred?.push?.toString?.()?.includes?.("[native code]") ?? null,
-    });
-    // #endregion
-    return Promise.resolve(true);
+    if (existing.dataset.failed === "true") {
+      existing.remove();
+    } else {
+      // #region agent log
+      agentDebugLog("A", "onesignal-client.js:loadOneSignalScript", "script tag already present", {
+        hasWindowOneSignal: typeof window.OneSignal !== "undefined",
+        deferredIsArray: Array.isArray(window.OneSignalDeferred),
+        deferredLen: window.OneSignalDeferred?.length ?? null,
+        pushIsNative:
+          window.OneSignalDeferred?.push?.toString?.()?.includes?.("[native code]") ?? null,
+      });
+      // #endregion
+      return Promise.resolve(true);
+    }
   }
 
   return new Promise((resolve, reject) => {
@@ -182,30 +259,160 @@ export function loadOneSignalScript() {
       // #endregion
       resolve(true);
     };
-    script.onerror = () =>
-      reject(new Error("Kon pushdienst niet laden. Controleer je internetverbinding."));
+    script.onerror = () => {
+      script.dataset.failed = "true";
+      reject(new TypeError("NetworkError: Load failed"));
+    };
     document.head.appendChild(script);
   });
 }
 
-let oneSignalInstance = null;
-let oneSignalInitPromise = null;
-let oneSignalInitKey = null;
+function acquireOneSignalSdk() {
+  return new Promise((resolve, reject) => {
+    const deferred = ensureOneSignalDeferred();
+
+    if (!deferred) {
+      reject(new Error("Pushdienst is niet beschikbaar."));
+      return;
+    }
+
+    // #region agent log
+    const pushStr = deferred.push?.toString?.() ?? "";
+    agentDebugLog("A", "onesignal-client.js:deferred.push", "about to push deferred callback", {
+      deferredLen: deferred.length,
+      pushLooksNative: pushStr.includes("[native code]"),
+      pushSnippet: pushStr.slice(0, 120),
+      hasWindowOneSignal: typeof window.OneSignal !== "undefined",
+      windowOneSignalType: typeof window.OneSignal,
+    });
+    // #endregion
+
+    const timer = window.setTimeout(() => {
+      // #region agent log
+      agentDebugLog("A", "onesignal-client.js:deferred.timeout", "deferred callback timed out", {
+        deferredLen: deferred.length,
+        visibility: document.visibilityState,
+      });
+      // #endregion
+      reject(
+        new Error(
+          "Pushdienst reageert niet. Sluit de app volledig, open opnieuw vanaf je beginscherm en probeer opnieuw."
+        )
+      );
+    }, 20000);
+
+    deferred.push((sdk) => {
+      window.clearTimeout(timer);
+      // #region agent log
+      agentDebugLog("A", "onesignal-client.js:deferred.callback", "deferred callback fired", {
+        hasSdk: !!sdk,
+        hasNotifications: !!sdk?.Notifications,
+        hasInit: typeof sdk?.init === "function",
+      });
+      // #endregion
+      resolve(sdk);
+    });
+  });
+}
+
+async function initOneSignalSdk(OneSignal, appId) {
+  const state = getPageState();
+
+  if (state.initCompleted && state.instance) {
+    return state.instance;
+  }
+
+  // #region agent log
+  agentDebugLog("B", "onesignal-client.js:beforeInit", "calling OneSignal.init", {
+    pushSupported:
+      typeof OneSignal.Notifications?.isPushSupported === "function"
+        ? OneSignal.Notifications.isPushSupported()
+        : true,
+    hasUser: !!OneSignal?.User,
+    initCompleted: state.initCompleted,
+  });
+  // #endregion
+
+  try {
+    await OneSignal.init({
+      appId,
+      notifyButton: {
+        enable: false,
+      },
+      serviceWorkerPath: "/OneSignalSDKWorker.js",
+    });
+    state.initCompleted = true;
+  } catch (initError) {
+    // #region agent log
+    agentDebugLog("B", "onesignal-client.js:initError", "OneSignal.init threw", {
+      error: initError?.message ?? String(initError),
+    });
+    // #endregion
+
+    if (isAlreadyInitializedError(initError)) {
+      state.initCompleted = true;
+      return OneSignal;
+    }
+
+    throw initError;
+  }
+
+  return OneSignal;
+}
+
+async function runInitializeOneSignal(appId, playerId) {
+  await waitForOnline();
+
+  const pushSupportedCheckDelay = getPushEnvironment().isIos ? 250 : 0;
+  if (pushSupportedCheckDelay) {
+    await wait(pushSupportedCheckDelay);
+  }
+
+  await loadOneSignalScript();
+  const OneSignal = await acquireOneSignalSdk();
+
+  const pushSupported =
+    typeof OneSignal.Notifications?.isPushSupported === "function"
+      ? OneSignal.Notifications.isPushSupported()
+      : true;
+
+  if (!pushSupported) {
+    throw new Error(getUnsupportedPushMessage());
+  }
+
+  await initOneSignalSdk(OneSignal, appId);
+  await OneSignal.login(playerId);
+
+  const state = getPageState();
+  state.instance = OneSignal;
+  state.initCompleted = true;
+
+  // #region agent log
+  agentDebugLog("B", "onesignal-client.js:initSuccess", "OneSignal init+login success", {
+    initKey: `${appId}:${playerId}`,
+  });
+  // #endregion
+
+  return OneSignal;
+}
 
 export function getOneSignalInstance() {
-  return oneSignalInstance;
+  return getPageState().instance;
 }
 
 export async function initializeOneSignal(appId, playerId) {
   const initKey = `${appId}:${playerId}`;
+  const state = getPageState();
 
   // #region agent log
   agentDebugLog("B", "onesignal-client.js:initializeOneSignal:entry", "initializeOneSignal called", {
     initKey,
-    hasInstance: !!oneSignalInstance,
-    hasPromise: !!oneSignalInitPromise,
-    currentInitKey: oneSignalInitKey,
+    hasInstance: !!state.instance,
+    hasPromise: !!state.initPromise,
+    currentInitKey: state.initKey,
+    initCompleted: state.initCompleted,
     visibility: typeof document !== "undefined" ? document.visibilityState : null,
+    online: typeof navigator !== "undefined" ? navigator.onLine : null,
     standalone:
       typeof window !== "undefined"
         ? !!(window.navigator.standalone || window.matchMedia("(display-mode: standalone)").matches)
@@ -213,12 +420,21 @@ export async function initializeOneSignal(appId, playerId) {
   });
   // #endregion
 
-  if (oneSignalInstance && oneSignalInitKey === initKey) {
-    return oneSignalInstance;
+  if (state.instance) {
+    if (state.initKey !== initKey) {
+      await state.instance.login(playerId);
+      state.initKey = initKey;
+    }
+    return state.instance;
   }
 
-  if (oneSignalInitPromise && oneSignalInitKey === initKey) {
-    return oneSignalInitPromise;
+  if (state.initPromise) {
+    const sdk = await state.initPromise;
+    if (state.initKey !== initKey) {
+      await sdk.login(playerId);
+      state.initKey = initKey;
+    }
+    return sdk;
   }
 
   const iosRequirement = getIosPwaRequirementMessage();
@@ -227,126 +443,95 @@ export async function initializeOneSignal(appId, playerId) {
     throw new Error(iosRequirement);
   }
 
-  oneSignalInitKey = initKey;
-  oneSignalInitPromise = (async () => {
-    await loadOneSignalScript();
+  state.initKey = initKey;
+  state.initPromise = (async () => {
+    let lastError = null;
 
-    const OneSignal = await new Promise((resolve, reject) => {
-      const deferred = ensureOneSignalDeferred();
-
-      if (!deferred) {
-        reject(new Error("Pushdienst is niet beschikbaar."));
-        return;
-      }
-
-      // #region agent log
-      const pushStr = deferred.push?.toString?.() ?? "";
-      agentDebugLog("A", "onesignal-client.js:deferred.push", "about to push deferred callback", {
-        deferredLen: deferred.length,
-        pushLooksNative: pushStr.includes("[native code]"),
-        pushSnippet: pushStr.slice(0, 120),
-        hasWindowOneSignal: typeof window.OneSignal !== "undefined",
-        windowOneSignalType: typeof window.OneSignal,
-      });
-      // #endregion
-
-      const timer = window.setTimeout(() => {
+    for (let attempt = 1; attempt <= 4; attempt += 1) {
+      try {
         // #region agent log
-        agentDebugLog("A", "onesignal-client.js:deferred.timeout", "deferred callback timed out", {
-          deferredLen: deferred.length,
+        agentDebugLog("F", "onesignal-client.js:attempt", "init attempt", {
+          attempt,
+          online: navigator.onLine,
           visibility: document.visibilityState,
         });
         // #endregion
-        reject(
-          new Error(
-            "Pushdienst reageert niet. Sluit de app volledig, open opnieuw vanaf je beginscherm en probeer opnieuw."
-          )
-        );
-      }, 20000);
 
-      deferred.push(async (sdk) => {
-        window.clearTimeout(timer);
+        return await runInitializeOneSignal(appId, playerId);
+      } catch (error) {
+        lastError = error;
+
         // #region agent log
-        agentDebugLog("A", "onesignal-client.js:deferred.callback", "deferred callback fired", {
-          hasSdk: !!sdk,
-          hasNotifications: !!sdk?.Notifications,
-          hasInit: typeof sdk?.init === "function",
+        agentDebugLog("F", "onesignal-client.js:attemptFailed", "init attempt failed", {
+          attempt,
+          error: error?.message ?? String(error),
+          transient: isTransientNetworkError(error),
+          alreadyInitialized: isAlreadyInitializedError(error),
         });
         // #endregion
-        resolve(sdk);
-      });
-    });
 
-    const pushSupported =
-      typeof OneSignal.Notifications?.isPushSupported === "function"
-        ? OneSignal.Notifications.isPushSupported()
-        : true;
+        if (isAlreadyInitializedError(error)) {
+          const OneSignal = await acquireOneSignalSdk();
+          state.initCompleted = true;
+          await OneSignal.login(playerId);
+          state.instance = OneSignal;
+          return OneSignal;
+        }
 
-    if (!pushSupported) {
-      throw new Error(getUnsupportedPushMessage());
+        if (!isTransientNetworkError(error) || attempt === 4) {
+          throw error;
+        }
+
+        const failedScript = document.getElementById("onesignal-sdk");
+        if (failedScript?.dataset?.failed === "true") {
+          failedScript.remove();
+        }
+
+        await wait(500 * attempt);
+        await waitForOnline();
+      }
     }
 
-    // #region agent log
-    agentDebugLog("B", "onesignal-client.js:beforeInit", "calling OneSignal.init", {
-      pushSupported,
-      hasUser: !!OneSignal?.User,
-    });
-    // #endregion
-
-    try {
-      await OneSignal.init({
-        appId,
-        notifyButton: {
-          enable: false,
-        },
-        serviceWorkerPath: "/OneSignalSDKWorker.js",
-      });
-    } catch (initError) {
-      // #region agent log
-      agentDebugLog("B", "onesignal-client.js:initError", "OneSignal.init threw", {
-        error: initError?.message ?? String(initError),
-      });
-      // #endregion
-      throw initError;
-    }
-
-    await OneSignal.login(playerId);
-    oneSignalInstance = OneSignal;
-
-    // #region agent log
-    agentDebugLog("B", "onesignal-client.js:initSuccess", "OneSignal init+login success", {
-      initKey,
-    });
-    // #endregion
-
-    return OneSignal;
+    throw lastError ?? new Error("Pushdienst kon niet starten.");
   })();
 
   try {
-    return await oneSignalInitPromise;
+    return await state.initPromise;
   } catch (error) {
     // #region agent log
     agentDebugLog(
       "B",
       "onesignal-client.js:initCatch",
-      "initializeOneSignal failed, resetting module state",
-      { error: error?.message ?? String(error) }
+      "initializeOneSignal failed, resetting promise",
+      {
+        error: error?.message ?? String(error),
+        initCompleted: state.initCompleted,
+        hasInstance: !!state.instance,
+      }
     );
     // #endregion
-    oneSignalInitPromise = null;
-    oneSignalInitKey = null;
-    oneSignalInstance = null;
-    throw error;
+
+    // Keep initCompleted if OneSignal.init already succeeded so retries never call init twice.
+    state.initPromise = null;
+    if (!state.initCompleted) {
+      state.initKey = null;
+    }
+    if (!state.instance) {
+      throw error;
+    }
+    return state.instance;
   }
 }
 
 export async function waitForOneSignal() {
-  if (oneSignalInstance) {
-    return oneSignalInstance;
+  const state = getPageState();
+
+  if (state.instance) {
+    return state.instance;
   }
 
-  if (oneSignalInitPromise) {
-    return oneSignalInitPromise;
+  if (state.initPromise) {
+    return state.initPromise;
   }
 
   throw new Error("Pushdienst is nog niet gestart. Vernieuw de pagina.");
@@ -393,4 +578,33 @@ export async function disablePushSubscription(OneSignal) {
   if (OneSignal?.User?.PushSubscription?.optOut) {
     await OneSignal.User.PushSubscription.optOut();
   }
+}
+
+export async function withNetworkRetry(task, { attempts = 4, label = "request" } = {}) {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      await waitForOnline();
+      return await task();
+    } catch (error) {
+      lastError = error;
+
+      // #region agent log
+      agentDebugLog("F", "onesignal-client.js:withNetworkRetry", `${label} failed`, {
+        attempt,
+        error: error?.message ?? String(error),
+        transient: isTransientNetworkError(error),
+      });
+      // #endregion
+
+      if (!isTransientNetworkError(error) || attempt === attempts) {
+        throw error;
+      }
+
+      await wait(400 * attempt);
+    }
+  }
+
+  throw lastError;
 }
