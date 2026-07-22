@@ -82,7 +82,7 @@ Amateur clubs often organise via WhatsApp and spreadsheets: who is available, wh
 | 11 | Row Level Security policies | Done |
 | 12 | Public read-only demo for portfolio | Done |
 
----
+--- 
 
 ## Highlights for recruiters
 
