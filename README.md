@@ -34,12 +34,6 @@ Amateur clubs often organise via WhatsApp and spreadsheets: who is available, wh
 |:---:|:---:|:---:|
 | Portfolio entry without an account | Present / doubt / absent + live squad overview | Formation, shirts, bench |
 
-<!-- Optional: add more shots later
-| Desktop calendar | Desktop admin |
-|:---:|:---:|
-| ![…](docs/screenshots/desktop-calendar.png) | ![…](docs/screenshots/desktop-admin.png) |
--->
-
 ---
 
 ## Features
