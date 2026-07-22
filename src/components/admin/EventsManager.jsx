@@ -204,7 +204,7 @@ function EventForm({ initial, submitLabel, onSubmit, onCancel }) {
   );
 }
 
-function EventRow({ event, onUpdated, onDeleted }) {
+function EventRow({ event, onUpdated, onDeleted, readOnly = false }) {
   const [isEditing, setIsEditing] = useState(false);
 
   async function handleUpdate(values) {
@@ -258,19 +258,27 @@ function EventRow({ event, onUpdated, onDeleted }) {
         )}
       </div>
 
-      <div className="flex gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-          Bewerken
-        </Button>
-        <Button type="button" variant="destructive" size="sm" onClick={handleDelete}>
-          Verwijderen
-        </Button>
-      </div>
+      {!readOnly && (
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+            Bewerken
+          </Button>
+          <Button type="button" variant="destructive" size="sm" onClick={handleDelete}>
+            Verwijderen
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
 
-export function EventsManager({ events, onEventsChange, weekStart, onWeekChange }) {
+export function EventsManager({
+  events,
+  onEventsChange,
+  weekStart,
+  onWeekChange,
+  readOnly = false,
+}) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [localEvents, setLocalEvents] = useState(events);
   const [isSyncingRbfa, setIsSyncingRbfa] = useState(false);
@@ -336,22 +344,24 @@ export function EventsManager({ events, onEventsChange, weekStart, onWeekChange 
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">Agenda</h2>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={isSyncingRbfa}
-            onClick={handleRbfaSync}
-          >
-            {isSyncingRbfa ? "RBFA synchroniseren…" : "RBFA kalender sync"}
-          </Button>
-          {!showAddForm && (
-            <Button type="button" size="sm" onClick={() => setShowAddForm(true)}>
-              Event toevoegen
+        {!readOnly && (
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={isSyncingRbfa}
+              onClick={handleRbfaSync}
+            >
+              {isSyncingRbfa ? "RBFA synchroniseren…" : "RBFA kalender sync"}
             </Button>
-          )}
-        </div>
+            {!showAddForm && (
+              <Button type="button" size="sm" onClick={() => setShowAddForm(true)}>
+                Event toevoegen
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       {rbfaMessage && (
@@ -366,7 +376,9 @@ export function EventsManager({ events, onEventsChange, weekStart, onWeekChange 
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Events deze week</CardTitle>
           <CardDescription>
-            Trainingen manueel beheren; wedstrijden ook via RBFA sync (FC Hoje).
+            {readOnly
+              ? "Demo-agenda met trainings en wedstrijden (alleen bekijken)."
+              : "Trainingen manueel beheren; wedstrijden ook via RBFA sync (FC Hoje)."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -389,6 +401,7 @@ export function EventsManager({ events, onEventsChange, weekStart, onWeekChange 
                 event={event}
                 onUpdated={handleUpdated}
                 onDeleted={handleDeleted}
+                readOnly={readOnly}
               />
             ))
           )}

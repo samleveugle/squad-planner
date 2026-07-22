@@ -122,7 +122,7 @@ function PlayerForm({ initial, submitLabel, onSubmit, onCancel }) {
   );
 }
 
-function PlayerRow({ player, onUpdated, onDeleted }) {
+function PlayerRow({ player, onUpdated, onDeleted, readOnly = false }) {
   const [isEditing, setIsEditing] = useState(false);
 
   async function handleUpdate(values) {
@@ -174,19 +174,21 @@ function PlayerRow({ player, onUpdated, onDeleted }) {
         </div>
       </div>
 
-      <div className="flex gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-          Bewerken
-        </Button>
-        <Button type="button" variant="destructive" size="sm" onClick={handleDelete}>
-          Verwijderen
-        </Button>
-      </div>
+      {!readOnly && (
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+            Bewerken
+          </Button>
+          <Button type="button" variant="destructive" size="sm" onClick={handleDelete}>
+            Verwijderen
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
 
-export function PlayersManager({ players, onPlayersChange }) {
+export function PlayersManager({ players, onPlayersChange, readOnly = false }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [localPlayers, setLocalPlayers] = useState(players);
 
@@ -229,7 +231,7 @@ export function PlayersManager({ players, onPlayersChange }) {
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">Spelers</h2>
-        {!showAddForm && (
+        {!readOnly && !showAddForm && (
           <Button type="button" size="sm" onClick={() => setShowAddForm(true)}>
             Speler toevoegen
           </Button>
@@ -240,8 +242,9 @@ export function PlayersManager({ players, onPlayersChange }) {
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Ploegleden</CardTitle>
           <CardDescription>
-            Voeg spelers toe, stel e-mail in voor magic-link login, en bepaal admin/ploegspeler
-            rollen.
+            {readOnly
+              ? "Demo-overzicht van de fictieve ploeg (alleen bekijken)."
+              : "Voeg spelers toe, stel e-mail in voor magic-link login, en bepaal admin/ploegspeler rollen."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -264,6 +267,7 @@ export function PlayersManager({ players, onPlayersChange }) {
                 player={player}
                 onUpdated={handleUpdated}
                 onDeleted={handleDeleted}
+                readOnly={readOnly}
               />
             ))
           )}

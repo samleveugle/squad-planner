@@ -37,6 +37,8 @@ import {
   getEventsForWeek,
   getWeekStart,
 } from "@/lib/events";
+import { DemoBanner } from "@/components/demo/DemoBanner";
+import { DEMO_READ_ONLY_MESSAGE, getDemoSnapshot } from "@/lib/demo-data";
 import { getResponseKey } from "@/lib/mock-data";
 import { getUnseenPublishedLineups } from "@/lib/lineups";
 
@@ -62,7 +64,7 @@ function readStoredRoleView(playerId) {
   return stored === "admin" ? "admin" : "player";
 }
 
-export function SquadPlanner({ currentPlayer }) {
+export function SquadPlanner({ currentPlayer, isDemo = false }) {
   const currentPlayerId = currentPlayer.id;
   const [players, setPlayers] = useState([]);
   const [events, setEvents] = useState([]);
@@ -75,7 +77,7 @@ export function SquadPlanner({ currentPlayer }) {
   const [roleView, setRoleView] = useState(() =>
     readStoredRoleView(currentPlayer.id)
   );
-  const [dataLoading, setDataLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(!isDemo);
   const [saveError, setSaveError] = useState(null);
 
   const weekEvents = getEventsForWeek(events, weekStart);
@@ -93,6 +95,19 @@ export function SquadPlanner({ currentPlayer }) {
   );
 
   useEffect(() => {
+    if (isDemo) {
+      const snapshot = getDemoSnapshot();
+      setPlayers(snapshot.players);
+      setEvents(snapshot.events);
+      setResponses(snapshot.responses);
+      setLineups(snapshot.lineups);
+      setMatchStats(snapshot.matchStats);
+      setWeekStart(getDefaultWeekStart(snapshot.events));
+      setDataLoading(false);
+      setSaveError(null);
+      return;
+    }
+
     let cancelled = false;
 
     async function loadPersistedData() {
@@ -153,7 +168,7 @@ export function SquadPlanner({ currentPlayer }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isDemo]);
 
   useEffect(() => {
     setRoleView(readStoredRoleView(currentPlayer.id));
@@ -197,6 +212,11 @@ export function SquadPlanner({ currentPlayer }) {
   }
 
   async function handleAvailabilityChange(eventId, status) {
+    if (isDemo) {
+      setSaveError(DEMO_READ_ONLY_MESSAGE);
+      return;
+    }
+
     const responseKey = getResponseKey(currentPlayerId, eventId);
     const previousStatus = responses[responseKey];
 
@@ -232,6 +252,11 @@ export function SquadPlanner({ currentPlayer }) {
   }, []);
 
   async function handleSaveLineup(eventId, lineupData) {
+    if (isDemo) {
+      setSaveError(DEMO_READ_ONLY_MESSAGE);
+      return;
+    }
+
     const previousLineup = lineups[eventId];
     const nextLineup = {
       ...lineupData,
@@ -264,6 +289,11 @@ export function SquadPlanner({ currentPlayer }) {
   }
 
   async function handlePublishLineup(eventId, lineupData) {
+    if (isDemo) {
+      setSaveError(DEMO_READ_ONLY_MESSAGE);
+      return;
+    }
+
     const previousLineup = lineups[eventId];
     const publishedAt = new Date().toISOString();
     const nextLineup = {
@@ -303,6 +333,11 @@ export function SquadPlanner({ currentPlayer }) {
   }
 
   async function handleUnpublishLineup(eventId) {
+    if (isDemo) {
+      setSaveError(DEMO_READ_ONLY_MESSAGE);
+      return;
+    }
+
     const previousLineup = lineups[eventId];
 
     if (!previousLineup) {
@@ -330,6 +365,11 @@ export function SquadPlanner({ currentPlayer }) {
   }
 
   async function handleSaveMatchStats(eventId, statsPayload) {
+    if (isDemo) {
+      setSaveError(DEMO_READ_ONLY_MESSAGE);
+      return;
+    }
+
     const previousStats = matchStats[eventId];
 
     setMatchStats((previous) => ({
@@ -395,13 +435,20 @@ export function SquadPlanner({ currentPlayer }) {
           showRoleSwitch={canSwitchRole}
           roleView={roleView}
           onRoleViewChange={handleRoleViewChange}
+          isDemo={isDemo}
         />
 
         <main className="mx-auto max-w-3xl space-y-4 px-4 py-8">
+        {isDemo && <DemoBanner />}
+
         {saveError && (
           <div
             role="alert"
-            className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200"
+            className={`rounded-lg border px-4 py-3 text-sm ${
+              isDemo
+                ? "border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100"
+                : "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200"
+            }`}
           >
             {saveError}
           </div>
@@ -419,7 +466,7 @@ export function SquadPlanner({ currentPlayer }) {
           />
         )}
 
-        {isSquadPlayer && process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID && (
+        {!isDemo && isSquadPlayer && process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID && (
           <>
             <OneSignalInit playerId={currentPlayerId} />
             <PushOptIn currentPlayer={currentPlayer} />
@@ -491,7 +538,11 @@ export function SquadPlanner({ currentPlayer }) {
               </TabsContent>
 
               <TabsContent value="players-admin">
-                <PlayersManager players={players} onPlayersChange={setPlayers} />
+                <PlayersManager
+                  players={players}
+                  onPlayersChange={setPlayers}
+                  readOnly={isDemo}
+                />
               </TabsContent>
 
               <TabsContent value="events-admin">
@@ -500,6 +551,7 @@ export function SquadPlanner({ currentPlayer }) {
                   onEventsChange={setEvents}
                   weekStart={weekStart}
                   onWeekChange={handleWeekChange}
+                  readOnly={isDemo}
                 />
               </TabsContent>
 

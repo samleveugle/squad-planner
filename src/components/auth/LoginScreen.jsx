@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { signInWithEmailPassword } from "@/app/actions/auth";
@@ -66,6 +67,15 @@ export function LoginScreen({ authError = null }) {
           {isSubmitting ? "Inloggen..." : "Inloggen"}
         </Button>
       </form>
+
+      <div className="rounded-xl border border-dashed bg-card/60 p-4 text-center">
+        <p className="mb-3 text-sm text-muted-foreground">
+          Bekijk de app met een fictieve ploeg — zonder account.
+        </p>
+        <Button asChild variant="outline" className="w-full">
+          <Link href="/demo">Demo openen (read-only)</Link>
+        </Button>
+      </div>
 
       <AuthAlert message={message} />
 
