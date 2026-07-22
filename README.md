@@ -3,6 +3,7 @@
 Webapp voor onze voetbalploeg: trainingen en wedstrijden plannen, beschikbaarheid doorgeven, opstellingen delen en wedstrijd-stats bijhouden.
 
 **Live app:** [https://squad-planner-beige.vercel.app](https://squad-planner-beige.vercel.app)
+App demo: https://squad-planner-beige.vercel.app/demo
 
 Spelers loggen in met **e-mail + wachtwoord**. Eerste keer registreren ze via `/register`. Admins beheren spelers, agenda, opstellingen en stats.
 
