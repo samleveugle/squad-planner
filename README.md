@@ -256,6 +256,15 @@ npm run db:reset-test-data
 
 Of plak `supabase/migrations/004_reset_test_responses.sql` in Supabase → SQL Editor.
 
+### Row Level Security (RLS)
+Alle app-tabellen hebben RLS aan. Data loopt via `SUPABASE_SERVICE_ROLE_KEY` (bypasst RLS); de publieke anon key kan tabellen niet rechtstreeks lezen/schrijven.
+
+```bash
+npm run db:enable-rls
+```
+
+Of plak `supabase/migrations/005_enable_rls.sql` in Supabase → SQL Editor.
+
 ### Wanneer wordt er gepusht?
 - **Wanneer:** zondag 20:00 (Brussels)
 - **Tekst:** *Vergeet je aanwezigheid voor komende week niet in te vullen.*
