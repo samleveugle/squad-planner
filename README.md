@@ -1,6 +1,6 @@
 # Squad Planner
 
-Webapp voetbalploeg: trainingen en wedstrijden plannen, beschikbaarheid doorgeven, opstellingen delen en wedstrijd-stats bijhouden.
+Webapp voor voetbalploeg: trainingen en wedstrijden plannen, beschikbaarheid doorgeven, opstellingen delen en wedstrijd-stats bijhouden.
 
 **Live app:** [https://squad-planner-beige.vercel.app](https://squad-planner-beige.vercel.app)
 
