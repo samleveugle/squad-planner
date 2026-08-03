@@ -114,8 +114,10 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
   }
 
   function handleFormationChange(nextFormation) {
+    setPositions((current) =>
+      migratePositions(current, nextFormation, formation)
+    );
     setFormation(nextFormation);
-    setPositions((current) => migratePositions(current, nextFormation));
     setSavedMessage("");
   }
 

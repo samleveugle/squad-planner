@@ -16,23 +16,22 @@ import {
 import { getResponseKey } from "@/lib/mock-data";
 
 const WEEKS_TO_EXTEND = 4;
-const PADDING_WEEKS = 2;
+const FUTURE_PADDING_WEEKS = 4;
 
+/**
+ * Default range starts at the focused week (usually current week).
+ * Past weeks are not included until the user navigates backward.
+ */
 function getInitialWeekRange(events, focusedWeekStart) {
-  const { first, last } = getEventWeekRange(events);
-  let start = addWeeks(first, -PADDING_WEEKS);
-  let end = addWeeks(last, PADDING_WEEKS);
   const focused = getWeekStart(focusedWeekStart);
+  const { last } = getEventWeekRange(events);
 
-  if (focused.getTime() < start.getTime()) {
-    start = focused;
+  let end = addWeeks(focused, FUTURE_PADDING_WEEKS);
+  if (last.getTime() > end.getTime()) {
+    end = addWeeks(getWeekStart(last), FUTURE_PADDING_WEEKS);
   }
 
-  if (focused.getTime() > end.getTime()) {
-    end = focused;
-  }
-
-  return { start: getWeekStart(start), end: getWeekStart(end) };
+  return { start: focused, end: getWeekStart(end) };
 }
 
 export function WeekView({
@@ -54,6 +53,8 @@ export function WeekView({
   const loadMoreSentinelRef = useRef(null);
   const isProgrammaticScroll = useRef(false);
   const scrollTimeoutRef = useRef(null);
+  const hasInitialScrollRef = useRef(false);
+  const prevFocusedKeyRef = useRef(null);
 
   const weekStarts = useMemo(
     () => getWeekStartsInRange(weekRange.start, weekRange.end),
@@ -91,12 +92,12 @@ export function WeekView({
     return normalized;
   }, []);
 
-  const scrollToWeek = useCallback((targetWeekStart) => {
+  const scrollToWeek = useCallback((targetWeekStart, { smooth = true } = {}) => {
     const key = toDateString(getWeekStart(targetWeekStart));
     const section = weekSectionRefs.current.get(key);
 
     if (!section) {
-      return;
+      return false;
     }
 
     isProgrammaticScroll.current = true;
@@ -105,10 +106,15 @@ export function WeekView({
       window.clearTimeout(scrollTimeoutRef.current);
     }
 
-    section.scrollIntoView({ behavior: "smooth", block: "start" });
+    section.scrollIntoView({
+      behavior: smooth ? "smooth" : "auto",
+      block: "start",
+    });
     scrollTimeoutRef.current = window.setTimeout(() => {
       isProgrammaticScroll.current = false;
-    }, 600);
+    }, smooth ? 600 : 50);
+
+    return true;
   }, []);
 
   const handleNavigatorWeekChange = useCallback(
@@ -116,18 +122,21 @@ export function WeekView({
       const normalized = extendWeekRange(nextWeekStart);
       setVisibleWeekStart(normalized);
       onWeekChange(normalized);
-      scrollToWeek(normalized);
+      // Allow past weeks when navigating back
+      scrollToWeek(normalized, { smooth: true });
     },
     [extendWeekRange, onWeekChange, scrollToWeek]
   );
 
+  // Keep future range in sync with events, but never pull start before focused week
+  // unless the user already navigated earlier (previous.start < focused).
   useEffect(() => {
+    const focused = getWeekStart(weekStart);
+    const next = getInitialWeekRange(events, focused);
+
     setWeekRange((previous) => {
-      const next = getInitialWeekRange(events, weekStart);
-      const start =
-        next.start.getTime() < previous.start.getTime()
-          ? next.start
-          : previous.start;
+      const userWentBack = previous.start.getTime() < focused.getTime();
+      const start = userWentBack ? previous.start : focused;
       const end =
         next.end.getTime() > previous.end.getTime() ? next.end : previous.end;
 
@@ -146,7 +155,26 @@ export function WeekView({
     const normalized = getWeekStart(weekStart);
     setVisibleWeekStart(normalized);
     extendWeekRange(normalized);
-    scrollToWeek(normalized);
+
+    const isFirstScroll = !hasInitialScrollRef.current;
+    const focusedChanged = prevFocusedKeyRef.current !== focusedWeekKey;
+    prevFocusedKeyRef.current = focusedWeekKey;
+
+    if (!focusedChanged && hasInitialScrollRef.current) {
+      return;
+    }
+
+    // Wait a frame so week sections exist in the DOM
+    const frame = window.requestAnimationFrame(() => {
+      const didScroll = scrollToWeek(normalized, {
+        smooth: !isFirstScroll,
+      });
+      if (didScroll) {
+        hasInitialScrollRef.current = true;
+      }
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [focusedWeekKey, extendWeekRange, scrollToWeek, weekStart]);
 
   useEffect(() => {

@@ -36,6 +36,7 @@ import {
   getDefaultWeekStart,
   getEventsForWeek,
   getWeekStart,
+  toDateString,
 } from "@/lib/events";
 import { DemoBanner } from "@/components/demo/DemoBanner";
 import { DEMO_READ_ONLY_MESSAGE, getDemoSnapshot } from "@/lib/demo-data";
@@ -64,6 +65,17 @@ function readStoredRoleView(playerId) {
   return stored === "admin" ? "admin" : "player";
 }
 
+function sameWeek(a, b) {
+  return toDateString(getWeekStart(a)) === toDateString(getWeekStart(b));
+}
+
+function getInitialWeekStart(isDemo) {
+  if (isDemo) {
+    return getDefaultWeekStart(getDemoSnapshot().events);
+  }
+  return getWeekStart(new Date());
+}
+
 export function SquadPlanner({ currentPlayer, isDemo = false }) {
   const currentPlayerId = currentPlayer.id;
   const [players, setPlayers] = useState([]);
@@ -72,7 +84,7 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
   const [lineups, setLineups] = useState({});
   const [matchStats, setMatchStats] = useState({});
   const [seenLineups, setSeenLineups] = useState({});
-  const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
+  const [weekStart, setWeekStart] = useState(() => getInitialWeekStart(isDemo));
   const [activeTab, setActiveTab] = useState("calendar");
   const [roleView, setRoleView] = useState(() =>
     readStoredRoleView(currentPlayer.id)
@@ -102,7 +114,10 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
       setResponses(snapshot.responses);
       setLineups(snapshot.lineups);
       setMatchStats(snapshot.matchStats);
-      setWeekStart(getDefaultWeekStart(snapshot.events));
+      setWeekStart((previous) => {
+        const next = getDefaultWeekStart(snapshot.events);
+        return sameWeek(previous, next) ? previous : next;
+      });
       setDataLoading(false);
       setSaveError(null);
       return;
@@ -136,7 +151,10 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
 
       if (eventsResult.success) {
         setEvents(eventsResult.events);
-        setWeekStart(getDefaultWeekStart(eventsResult.events));
+        setWeekStart((previous) => {
+          const next = getDefaultWeekStart(eventsResult.events);
+          return sameWeek(previous, next) ? previous : next;
+        });
       } else {
         errors.push(eventsResult.error);
       }

@@ -93,29 +93,9 @@ export function formatWeekRange(weekStart) {
 }
 
 export function getDefaultWeekStart(events) {
-  const sorted = sortEventsByDate(events);
-
-  if (sorted.length === 0) {
-    return getWeekStart(new Date());
-  }
-
-  const today = new Date();
-  today.setHours(12, 0, 0, 0);
-
-  const currentWeekStart = getWeekStart(today);
-  if (getEventsForWeek(sorted, currentWeekStart).length > 0) {
-    return currentWeekStart;
-  }
-
-  const todayString = toDateString(today);
-  const nextEvent = sorted.find((event) => event.date >= todayString);
-
-  if (nextEvent) {
-    return getWeekStart(parseDate(nextEvent.date));
-  }
-
-  const lastEvent = sorted[sorted.length - 1];
-  return getWeekStart(parseDate(lastEvent.date));
+  // Always open on the current week. Past weeks are reached via navigator only.
+  void events;
+  return getWeekStart(new Date());
 }
 
 export function getEventTitle(event) {
