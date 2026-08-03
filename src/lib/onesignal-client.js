@@ -355,20 +355,6 @@ export async function initializeOneSignal(appId, playerId) {
   }
 }
 
-export async function waitForOneSignal() {
-  const state = getPageState();
-
-  if (state.instance) {
-    return state.instance;
-  }
-
-  if (state.initPromise) {
-    return state.initPromise;
-  }
-
-  throw new Error("Pushdienst is nog niet gestart. Vernieuw de pagina.");
-}
-
 export async function isPushSubscribed(OneSignal) {
   if (!OneSignal) {
     return false;

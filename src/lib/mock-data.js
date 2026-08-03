@@ -73,8 +73,6 @@ export const PLAYERS = [
   ...PLAYER_NAMES.map((name) => createPlayer(name)),
 ];
 
-export const SQUAD_PLAYERS = PLAYERS.filter((player) => player.isSquadPlayer);
-
 function generateSeasonEvents() {
   const events = [];
   const seasonStart = parseDate(SEASON.start);

@@ -125,14 +125,3 @@ export function formatEventTime(event) {
   }
   return event.time.replace(":", "u");
 }
-
-export function getEventTypeLabel(type) {
-  return type === "training" ? "Training" : "Wedstrijd";
-}
-
-export function getEventLocationSummary(event) {
-  if (event.type === "match") {
-    return event.isHome ? "Thuis" : "Uit";
-  }
-  return event.location;
-}

@@ -1,5 +1,5 @@
 import { DEFAULT_FORMATION, createEmptyPositions } from "@/lib/formations";
-import { getEventResponseSummary as getEventResponseSummaryForPlayers, getPlayerById } from "@/lib/players";
+import { getEventResponseSummary as getEventResponseSummaryForPlayers } from "@/lib/players";
 
 export const MAX_BENCH_PLAYERS = 5;
 export const MAX_STAFF = 3;
@@ -133,25 +133,6 @@ export function getMatchSquadPlayerIds(lineup) {
   ];
 }
 
-export function getMatchSquadPlayers(lineup, players) {
-  return getMatchSquadPlayerIds(lineup)
-    .map((playerId) => getPlayerById(players, playerId))
-    .filter(Boolean);
-}
-
-export function hasMatchSquad(lineup) {
-  return getMatchSquadPlayerIds(lineup).length > 0;
-}
-
-export function isPlayerInLineup(lineup, playerId) {
-  if (!lineup || !playerId) {
-    return false;
-  }
-
-  const assigned = getAllAssignedPlayerIds(lineup);
-  return assigned.has(playerId);
-}
-
 export function getPlayerLineupRole(lineup, playerId) {
   if (!lineup || !playerId) {
     return null;
@@ -207,22 +188,4 @@ export function formatPublishedAt(isoString) {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-export function getPlayerName(players, playerId) {
-  return getPlayerById(players, playerId)?.name ?? "Onbekend";
-}
-
-export function getBenchPlayers(players, bench = []) {
-  return bench
-    .filter(Boolean)
-    .map((playerId) => getPlayerById(players, playerId))
-    .filter(Boolean);
-}
-
-export function getStaffPlayers(players, staff = []) {
-  return staff
-    .filter(Boolean)
-    .map((playerId) => getPlayerById(players, playerId))
-    .filter(Boolean);
 }

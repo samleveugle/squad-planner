@@ -28,11 +28,3 @@ export function isAvailabilityReminderWindow(date = new Date()) {
   // Dat komt neer op zondagavond 20:00–21:59 in Brussels (winter/zomer + jitter).
   return weekday === "Sun" && hour >= 19 && hour <= 21;
 }
-
-export function formatBrusselsDateTime(date = new Date()) {
-  return new Intl.DateTimeFormat("nl-BE", {
-    timeZone: BRUSSELS_TIMEZONE,
-    dateStyle: "full",
-    timeStyle: "short",
-  }).format(date);
-}

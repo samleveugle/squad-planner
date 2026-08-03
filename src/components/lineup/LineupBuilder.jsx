@@ -16,13 +16,11 @@ import {
 } from "@/components/ui/select";
 import {
   countFilledPositions,
-  DEFAULT_FORMATION,
   getFormation,
   migratePositions,
 } from "@/lib/formations";
 import { usePlayers } from "@/context/PlayersContext";
 import {
-  createEmptyLineup,
   formatPublishedAt,
   getAllAssignedPlayerIds,
   getEligiblePlayers,

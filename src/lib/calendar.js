@@ -25,11 +25,6 @@ export function getEventsForDate(events, dateString) {
   return events.filter((event) => event.date === dateString);
 }
 
-export function getEventsForMonth(events, year, month) {
-  const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}`;
-  return events.filter((event) => event.date.startsWith(monthPrefix));
-}
-
 export function getMonthGrid(year, month) {
   const firstOfMonth = new Date(year, month, 1);
   let startOffset = firstOfMonth.getDay() - 1;

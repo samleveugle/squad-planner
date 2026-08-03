@@ -83,6 +83,12 @@ npm run db:enable-rls     # enable RLS (if not already)
 
 Migrations live in `supabase/migrations/` (including RLS policies in `006_rls_policies.sql`).
 
+**Event attendance (007):** effectieve aanwezigheid + speelminuten na training/match (`event_attendance`). Los van RSVP `availability`. Apply via Supabase SQL Editor (`007_event_attendance.sql`) or:
+
+```bash
+npm run db:apply-event-attendance
+```
+
 On Windows, DB scripts use `--use-system-ca` for SSL.
 
 ---

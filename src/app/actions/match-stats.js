@@ -1,7 +1,7 @@
 "use server";
 
-import { requireAdminPlayer, requireAuthPlayer } from "@/lib/auth";
-import { rowsToMatchStatsMap, statsPayloadToRows } from "@/lib/stats-db";
+import { requireAuthPlayer } from "@/lib/auth";
+import { rowsToMatchStatsMap } from "@/lib/stats-db";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function getMatchStats() {
@@ -30,47 +30,6 @@ export async function getMatchStats() {
       success: false,
       matchStats: {},
       error: error?.message ?? "Kon stats niet laden.",
-    };
-  }
-}
-
-export async function saveMatchStats(eventId, statsPayload) {
-  const auth = await requireAdminPlayer();
-
-  if (!auth.success) {
-    return { success: false, error: auth.error };
-  }
-
-  if (!eventId) {
-    return { success: false, error: "Event ontbreekt." };
-  }
-
-  try {
-    const supabase = createAdminClient();
-    const rows = statsPayloadToRows(eventId, statsPayload);
-
-    const { error: deleteError } = await supabase
-      .from("match_stats")
-      .delete()
-      .eq("event_id", eventId);
-
-    if (deleteError) {
-      throw deleteError;
-    }
-
-    if (rows.length > 0) {
-      const { error: insertError } = await supabase.from("match_stats").insert(rows);
-
-      if (insertError) {
-        throw insertError;
-      }
-    }
-
-    return { success: true };
-  } catch (error) {
-    return {
-      success: false,
-      error: error?.message ?? "Kon stats niet opslaan.",
     };
   }
 }

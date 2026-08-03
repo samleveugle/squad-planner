@@ -67,10 +67,6 @@ export const FORMATIONS = {
 
 export const DEFAULT_FORMATION = "4-3-3";
 
-export function getFormationIds() {
-  return Object.keys(FORMATIONS);
-}
-
 export function getFormation(formationId) {
   return FORMATIONS[formationId] ?? FORMATIONS[DEFAULT_FORMATION];
 }
@@ -170,8 +166,4 @@ export function migratePositions(
 
 export function countFilledPositions(positions) {
   return Object.values(positions).filter(Boolean).length;
-}
-
-export function getAssignedPlayerIds(positions) {
-  return Object.values(positions).filter(Boolean);
 }

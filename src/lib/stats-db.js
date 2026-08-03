@@ -1,5 +1,3 @@
-import { createEmptyPlayerStats } from "@/lib/stats";
-
 export function rowsToMatchStatsMap(rows) {
   return rows.reduce((matchStats, row) => {
     if (!matchStats[row.event_id]) {
@@ -23,9 +21,4 @@ export function statsPayloadToRows(eventId, statsPayload) {
     assists: stats?.assists ?? 0,
     updated_at: new Date().toISOString(),
   }));
-}
-
-export function isEmptyPlayerStats(stats) {
-  const normalized = stats ?? createEmptyPlayerStats();
-  return (normalized.goals ?? 0) === 0 && (normalized.assists ?? 0) === 0;
 }

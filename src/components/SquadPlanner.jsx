@@ -13,9 +13,10 @@ import {
   unpublishLineup as unpublishLineupAction,
 } from "@/app/actions/lineups";
 import {
-  getMatchStats,
-  saveMatchStats as saveMatchStatsAction,
-} from "@/app/actions/match-stats";
+  getEventAttendance,
+  saveEventAttendance as saveEventAttendanceAction,
+} from "@/app/actions/attendance";
+import { getMatchStats } from "@/app/actions/match-stats";
 import { getEvents } from "@/app/actions/events";
 import { AdminOverview } from "@/components/admin/AdminOverview";
 import { EventsManager } from "@/components/admin/EventsManager";
@@ -27,6 +28,7 @@ import { PushOptIn } from "@/components/notifications/PushOptIn";
 import { LineupManager } from "@/components/lineup/LineupManager";
 import { LineupNotificationBanner } from "@/components/lineup/LineupNotificationBanner";
 import { LineupTab } from "@/components/lineup/LineupTab";
+import { AttendanceOverview } from "@/components/stats/AttendanceOverview";
 import { StatsManager } from "@/components/stats/StatsManager";
 import { StatsTab } from "@/components/stats/StatsTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -49,6 +51,7 @@ const ADMIN_TABS = [
   "events-admin",
   "lineup-admin",
   "stats-admin",
+  "attendance-overview",
 ];
 const PLAYER_TABS = ["lineup", "stats"];
 
@@ -83,6 +86,7 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
   const [responses, setResponses] = useState({});
   const [lineups, setLineups] = useState({});
   const [matchStats, setMatchStats] = useState({});
+  const [attendance, setAttendance] = useState({});
   const [seenLineups, setSeenLineups] = useState({});
   const [weekStart, setWeekStart] = useState(() => getInitialWeekStart(isDemo));
   const [activeTab, setActiveTab] = useState("calendar");
@@ -114,6 +118,7 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
       setResponses(snapshot.responses);
       setLineups(snapshot.lineups);
       setMatchStats(snapshot.matchStats);
+      setAttendance(snapshot.attendance);
       setWeekStart((previous) => {
         const next = getDefaultWeekStart(snapshot.events);
         return sameWeek(previous, next) ? previous : next;
@@ -128,14 +133,21 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
     async function loadPersistedData() {
       setDataLoading(true);
 
-      const [playersResult, eventsResult, availabilityResult, lineupsResult, matchStatsResult] =
-        await Promise.all([
-          getPlayers(),
-          getEvents(),
-          getAvailabilityResponses(),
-          getLineups(),
-          getMatchStats(),
-        ]);
+      const [
+        playersResult,
+        eventsResult,
+        availabilityResult,
+        lineupsResult,
+        matchStatsResult,
+        attendanceResult,
+      ] = await Promise.all([
+        getPlayers(),
+        getEvents(),
+        getAvailabilityResponses(),
+        getLineups(),
+        getMatchStats(),
+        getEventAttendance(),
+      ]);
 
       if (cancelled) {
         return;
@@ -175,6 +187,12 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
         setMatchStats(matchStatsResult.matchStats);
       } else {
         errors.push(matchStatsResult.error);
+      }
+
+      if (attendanceResult.success) {
+        setAttendance(attendanceResult.attendance);
+      } else {
+        errors.push(attendanceResult.error);
       }
 
       setSaveError(errors.length > 0 ? errors.join(" · ") : null);
@@ -382,34 +400,77 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
     }
   }
 
-  async function handleSaveMatchStats(eventId, statsPayload) {
+  async function handleSaveAttendance({
+    eventId,
+    eventType,
+    draft,
+    statsPayload = {},
+  }) {
     if (isDemo) {
       setSaveError(DEMO_READ_ONLY_MESSAGE);
       return;
     }
 
+    const previousAttendance = attendance[eventId];
     const previousStats = matchStats[eventId];
+    const nextEventAttendance = Object.fromEntries(
+      Object.entries(draft ?? {}).map(([playerId, entry]) => [
+        playerId,
+        {
+          attended: Boolean(entry?.attended),
+          minutes: entry?.minutes ?? null,
+        },
+      ])
+    );
 
-    setMatchStats((previous) => ({
+    setAttendance((previous) => ({
       ...previous,
-      [eventId]: statsPayload,
+      [eventId]: nextEventAttendance,
     }));
+
+    if (eventType === "match") {
+      setMatchStats((previous) => ({
+        ...previous,
+        [eventId]: statsPayload,
+      }));
+    }
+
     setSaveError(null);
 
-    const result = await saveMatchStatsAction(eventId, statsPayload);
+    const result = await saveEventAttendanceAction({
+      eventId,
+      eventType,
+      draft,
+      statsPayload,
+    });
 
     if (!result.success) {
-      setMatchStats((previous) => {
+      setAttendance((previous) => {
         const next = { ...previous };
 
-        if (previousStats === undefined) {
+        if (previousAttendance === undefined) {
           delete next[eventId];
         } else {
-          next[eventId] = previousStats;
+          next[eventId] = previousAttendance;
         }
 
         return next;
       });
+
+      if (eventType === "match") {
+        setMatchStats((previous) => {
+          const next = { ...previous };
+
+          if (previousStats === undefined) {
+            delete next[eventId];
+          } else {
+            next[eventId] = previousStats;
+          }
+
+          return next;
+        });
+      }
+
       setSaveError(result.error);
     }
   }
@@ -514,10 +575,15 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
             )}
 
             {showAdminTabs && (
-              <TabsTrigger value="stats-admin">Stats invoeren</TabsTrigger>
+              <>
+                <TabsTrigger value="stats-admin">Stats invoeren</TabsTrigger>
+                <TabsTrigger value="attendance-overview">Overzicht</TabsTrigger>
+              </>
             )}
 
-            {showPlayerTabs && <TabsTrigger value="stats">Stats</TabsTrigger>}
+            {showPlayerTabs && (
+              <TabsTrigger value="stats">Mijn seizoen</TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="calendar">
@@ -540,6 +606,7 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
               <StatsTab
                 currentPlayer={currentPlayer}
                 matchStats={matchStats}
+                attendance={attendance}
                 events={events}
               />
             </TabsContent>
@@ -592,9 +659,17 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
                   events={weekEvents}
                   weekStart={weekStart}
                   onWeekChange={handleWeekChange}
+                  attendance={attendance}
                   matchStats={matchStats}
-                  lineups={lineups}
-                  onSaveMatchStats={handleSaveMatchStats}
+                  onSaveAttendance={handleSaveAttendance}
+                  readOnly={isDemo}
+                />
+              </TabsContent>
+
+              <TabsContent value="attendance-overview">
+                <AttendanceOverview
+                  events={events}
+                  attendance={attendance}
                 />
               </TabsContent>
             </>

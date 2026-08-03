@@ -200,6 +200,47 @@ function buildMatchStats(events, players) {
   return matchStats;
 }
 
+function buildAttendance(events, players) {
+  const attendance = {};
+  const today = toDateString(new Date());
+  const squad = players.filter((p) => p.isSquadPlayer);
+  const pastTrainings = events
+    .filter((e) => e.type === "training" && e.date < today)
+    .slice(-4);
+  const pastMatches = events
+    .filter((e) => e.type === "match" && e.date < today)
+    .slice(-3);
+
+  pastTrainings.forEach((training, trainingIndex) => {
+    const eventAttendance = {};
+    squad.forEach((player, index) => {
+      const attended = (index + trainingIndex) % 6 !== 0;
+      eventAttendance[player.id] = { attended, minutes: null };
+    });
+    eventAttendance["demo-alex"] = { attended: true, minutes: null };
+    attendance[training.id] = eventAttendance;
+  });
+
+  pastMatches.forEach((match, matchIndex) => {
+    const eventAttendance = {};
+    squad.forEach((player, index) => {
+      if (index >= 16) {
+        eventAttendance[player.id] = { attended: false, minutes: null };
+        return;
+      }
+      const minutes = index < 11 ? 70 + ((index + matchIndex) % 21) : 15 + (index % 20);
+      eventAttendance[player.id] = { attended: true, minutes };
+    });
+    eventAttendance["demo-alex"] = {
+      attended: true,
+      minutes: 80 + (matchIndex % 11),
+    };
+    attendance[match.id] = eventAttendance;
+  });
+
+  return attendance;
+}
+
 export function getDemoCurrentPlayer() {
   return {
     id: "demo-alex",
@@ -219,6 +260,7 @@ export function getDemoSnapshot() {
   const responses = buildAvailability(players, events);
   const lineups = buildLineups(events, players);
   const matchStats = buildMatchStats(events, players);
+  const attendance = buildAttendance(events, players);
 
   return {
     players,
@@ -226,6 +268,7 @@ export function getDemoSnapshot() {
     responses,
     lineups,
     matchStats,
+    attendance,
     currentPlayer: getDemoCurrentPlayer(),
   };
 }

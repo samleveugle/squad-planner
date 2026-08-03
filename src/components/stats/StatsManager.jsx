@@ -1,5 +1,10 @@
-import { MatchStatsForm } from "@/components/stats/MatchStatsForm";
+"use client";
+
+import { useState } from "react";
+
 import { WeekNavigator } from "@/components/calendar/WeekNavigator";
+import { AttendanceEventForm } from "@/components/stats/AttendanceEventForm";
+import { EventTypeToggle } from "@/components/stats/EventTypeToggle";
 import {
   Card,
   CardContent,
@@ -7,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { DEMO_READ_ONLY_MESSAGE } from "@/lib/demo-data";
 import {
   formatEventDate,
   formatEventTime,
@@ -17,25 +23,39 @@ export function StatsManager({
   events,
   weekStart,
   onWeekChange,
+  attendance,
   matchStats,
-  lineups,
-  onSaveMatchStats,
+  onSaveAttendance,
+  readOnly = false,
 }) {
-  const matchEvents = events.filter((event) => event.type === "match");
+  const [eventType, setEventType] = useState("training");
+  const filteredEvents = events.filter((event) => event.type === eventType);
+  const emptyLabel =
+    eventType === "training"
+      ? "Geen trainingen deze week"
+      : "Geen wedstrijden deze week";
 
   return (
     <section className="space-y-4">
       <h2 className="text-lg font-semibold">Stats invoeren</h2>
 
+      {readOnly && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+          {DEMO_READ_ONLY_MESSAGE}
+        </p>
+      )}
+
+      <EventTypeToggle value={eventType} onChange={setEventType} />
+
       <WeekNavigator weekStart={weekStart} onWeekChange={onWeekChange} />
 
-      {matchEvents.length === 0 ? (
+      {filteredEvents.length === 0 ? (
         <div className="rounded-xl border border-dashed bg-card p-8 text-center">
-          <p className="font-medium">Geen wedstrijden deze week</p>
+          <p className="font-medium">{emptyLabel}</p>
         </div>
       ) : (
         <div className="space-y-4">
-          {matchEvents.map((event) => (
+          {filteredEvents.map((event) => (
             <Card key={event.id}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg">{getEventTitle(event)}</CardTitle>
@@ -45,11 +65,12 @@ export function StatsManager({
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <MatchStatsForm
+                <AttendanceEventForm
                   event={event}
+                  attendance={attendance}
                   matchStats={matchStats}
-                  lineups={lineups}
-                  onSave={onSaveMatchStats}
+                  onSave={onSaveAttendance}
+                  readOnly={readOnly}
                 />
               </CardContent>
             </Card>
