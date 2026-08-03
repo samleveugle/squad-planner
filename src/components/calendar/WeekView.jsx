@@ -119,22 +119,51 @@ export function WeekView({
 
   const handleNavigatorWeekChange = useCallback(
     (nextWeekStart) => {
-      const normalized = extendWeekRange(nextWeekStart);
-      setVisibleWeekStart(normalized);
-      onWeekChange(normalized);
-      // Allow past weeks when navigating back
-      scrollToWeek(normalized, { smooth: true });
+      const normalized = getWeekStart(nextWeekStart);
+      const currentWeek = getWeekStart(new Date());
+      const isTodayReset =
+        toDateString(normalized) === toDateString(currentWeek);
+
+      if (isTodayReset) {
+        // "Vandaag": drop past weeks from the list and start at current week
+        setWeekRange(getInitialWeekRange(events, normalized));
+        setVisibleWeekStart(normalized);
+        onWeekChange(normalized);
+        window.requestAnimationFrame(() => {
+          scrollToWeek(normalized, { smooth: false });
+        });
+        return;
+      }
+
+      const extended = extendWeekRange(normalized);
+      setVisibleWeekStart(extended);
+      onWeekChange(extended);
+      scrollToWeek(extended, { smooth: true });
     },
-    [extendWeekRange, onWeekChange, scrollToWeek]
+    [events, extendWeekRange, onWeekChange, scrollToWeek]
   );
 
-  // Keep future range in sync with events, but never pull start before focused week
-  // unless the user already navigated earlier (previous.start < focused).
+  // Keep future range in sync with events.
+  // If focused week is the current week, always reset start (clear past weeks).
+  // Otherwise keep past weeks the user already navigated into.
   useEffect(() => {
     const focused = getWeekStart(weekStart);
+    const currentWeek = getWeekStart(new Date());
+    const isOnCurrentWeek =
+      toDateString(focused) === toDateString(currentWeek);
     const next = getInitialWeekRange(events, focused);
 
     setWeekRange((previous) => {
+      if (isOnCurrentWeek) {
+        if (
+          previous.start.getTime() === next.start.getTime() &&
+          previous.end.getTime() === next.end.getTime()
+        ) {
+          return previous;
+        }
+        return next;
+      }
+
       const userWentBack = previous.start.getTime() < focused.getTime();
       const start = userWentBack ? previous.start : focused;
       const end =
@@ -153,8 +182,15 @@ export function WeekView({
 
   useEffect(() => {
     const normalized = getWeekStart(weekStart);
+    const currentWeek = getWeekStart(new Date());
+    const isOnCurrentWeek =
+      toDateString(normalized) === toDateString(currentWeek);
+
     setVisibleWeekStart(normalized);
-    extendWeekRange(normalized);
+
+    if (!isOnCurrentWeek) {
+      extendWeekRange(normalized);
+    }
 
     const isFirstScroll = !hasInitialScrollRef.current;
     const focusedChanged = prevFocusedKeyRef.current !== focusedWeekKey;
@@ -164,10 +200,9 @@ export function WeekView({
       return;
     }
 
-    // Wait a frame so week sections exist in the DOM
     const frame = window.requestAnimationFrame(() => {
       const didScroll = scrollToWeek(normalized, {
-        smooth: !isFirstScroll,
+        smooth: !isFirstScroll && !isOnCurrentWeek,
       });
       if (didScroll) {
         hasInitialScrollRef.current = true;

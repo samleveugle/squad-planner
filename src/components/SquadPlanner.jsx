@@ -476,7 +476,7 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
           <p className="text-sm text-muted-foreground">Gegevens laden...</p>
         )}
 
-        {showPlayerTabs && (
+        {showPlayerTabs && !dataLoading && (
           <LineupNotificationBanner
             unseenEvents={unseenLineupEvents}
             onView={handleViewLineupNotification}
@@ -525,6 +525,7 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
               events={events}
               weekViewProps={weekViewProps}
               onWeekChange={handleWeekChange}
+              isLoading={dataLoading}
             />
           </TabsContent>
 
