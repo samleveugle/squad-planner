@@ -31,8 +31,9 @@ const db = postgres(databaseUrl, { ssl: "require", max: 1 });
 
 try {
   await db.unsafe(sql);
-  console.log("✅ Gewist: availability, lineups, match_stats, availability_reminder_log");
-} catch (error) {
+  console.log(
+    "✅ Gewist: availability, lineups, match_stats, event_attendance, availability_reminder_log"
+  );} catch (error) {
   console.error("❌ Reset mislukt:", error.message);
   process.exit(1);
 } finally {

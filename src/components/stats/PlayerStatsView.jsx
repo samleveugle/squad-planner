@@ -29,19 +29,34 @@ export function PlayerStatsView({
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary" className="px-3 py-1 text-sm">
+            <Badge
+              variant={season.trainingCount >= 1 ? "present" : "secondary"}
+              className="px-3 py-1 text-sm"
+            >
               {season.trainingCount} trainingen
             </Badge>
-            <Badge variant="secondary" className="px-3 py-1 text-sm">
+            <Badge
+              variant={season.matchCount >= 1 ? "present" : "secondary"}
+              className="px-3 py-1 text-sm"
+            >
               {season.matchCount} wedstrijden
             </Badge>
-            <Badge variant="present" className="px-3 py-1 text-sm">
+            <Badge
+              variant={season.totalMinutes >= 1 ? "present" : "secondary"}
+              className="px-3 py-1 text-sm"
+            >
               {season.totalMinutes} min
             </Badge>
-            <Badge variant="present" className="px-3 py-1 text-sm">
+            <Badge
+              variant={totals.goals >= 1 ? "present" : "secondary"}
+              className="px-3 py-1 text-sm"
+            >
               {totals.goals} goals
             </Badge>
-            <Badge variant="secondary" className="px-3 py-1 text-sm">
+            <Badge
+              variant={totals.assists >= 1 ? "present" : "secondary"}
+              className="px-3 py-1 text-sm"
+            >
               {totals.assists} assists
             </Badge>
           </div>
