@@ -9,6 +9,7 @@ import {
   getPlayerRegistrationEligibility,
   getSiteUrl,
   linkPlayerToAuthUser,
+  linkPlayerToExistingAuthUser,
 } from "@/lib/auth";
 import { toAuthUserMessage } from "@/lib/auth-errors";
 import { validatePasswordForm } from "@/lib/password";
@@ -92,10 +93,12 @@ export async function registerWithEmailPassword(email, password, confirmPassword
 
     if (error) {
       if (error.message?.toLowerCase().includes("already registered")) {
+        await linkPlayerToExistingAuthUser(normalizedEmail);
+
         return {
           success: false,
           error:
-            "Dit account is al geregistreerd. Log in of gebruik wachtwoord vergeten.",
+            "Je account bestaat al. Gebruik wachtwoord vergeten om in te loggen.",
         };
       }
       throw error;
@@ -188,14 +191,6 @@ export async function requestPasswordReset(email) {
       };
     }
 
-    if (!player.auth_user_id) {
-      return {
-        success: false,
-        error:
-          "Je account is nog niet geregistreerd. Ga eerst naar Registreren om een wachtwoord in te stellen.",
-      };
-    }
-
     const redirectTo = `${getSiteUrl()}/auth/callback/recovery`;
 
     const supabase = await createClient();
@@ -233,6 +228,8 @@ export async function requestPasswordReset(email) {
     if (error) {
       throw error;
     }
+
+    await linkPlayerToExistingAuthUser(normalizedEmail);
 
     const successResult = {
       success: true,

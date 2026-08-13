@@ -1,6 +1,10 @@
 const DEFAULT_RESET_ERROR = "Kon resetlink niet versturen.";
 const DEFAULT_ALERT_ERROR = "Er ging iets mis. Probeer opnieuw.";
 
+function isUsableMessage(message) {
+  return Boolean(message && message !== "{}" && message !== "[]");
+}
+
 function mapKnownAuthError(message) {
   const normalized = message.toLowerCase();
 
@@ -18,14 +22,14 @@ function mapKnownAuthError(message) {
 export function toAuthUserMessage(error, fallback = DEFAULT_RESET_ERROR) {
   if (typeof error === "string") {
     const trimmed = error.trim();
-    if (trimmed) {
+    if (isUsableMessage(trimmed)) {
       return mapKnownAuthError(trimmed);
     }
   }
 
   if (error && typeof error.message === "string") {
     const trimmed = error.message.trim();
-    if (trimmed) {
+    if (isUsableMessage(trimmed)) {
       return mapKnownAuthError(trimmed);
     }
   }
@@ -36,7 +40,7 @@ export function toAuthUserMessage(error, fallback = DEFAULT_RESET_ERROR) {
 export function formatAlertMessage(message, fallback = DEFAULT_ALERT_ERROR) {
   if (typeof message === "string") {
     const trimmed = message.trim();
-    if (trimmed && trimmed !== "{}" && trimmed !== "[]") {
+    if (isUsableMessage(trimmed)) {
       return trimmed;
     }
   }

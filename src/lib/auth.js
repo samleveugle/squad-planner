@@ -137,6 +137,51 @@ export async function getPlayerByEmail(email) {
   return data;
 }
 
+export async function linkPlayerToExistingAuthUser(email) {
+  const normalized = normalizeEmail(email);
+
+  if (!normalized) {
+    return null;
+  }
+
+  const player = await getPlayerByEmail(normalized);
+
+  if (!player || player.auth_user_id) {
+    return player;
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  const authUser = data.users.find(
+    (user) => normalizeEmail(user.email) === normalized
+  );
+
+  if (!authUser) {
+    return null;
+  }
+
+  const { data: linked, error: linkError } = await admin
+    .from("players")
+    .update({ auth_user_id: authUser.id })
+    .eq("id", player.id)
+    .select("id, name, email, auth_user_id")
+    .single();
+
+  if (linkError) {
+    throw linkError;
+  }
+
+  return linked;
+}
+
 export async function getPlayerRegistrationEligibility(email) {
   const player = await getPlayerByEmail(email);
 
