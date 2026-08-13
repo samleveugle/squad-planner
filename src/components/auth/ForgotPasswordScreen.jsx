@@ -6,6 +6,7 @@ import { requestPasswordReset } from "@/app/actions/auth";
 import { AuthAlert, AuthLayout, AuthLink } from "@/components/auth/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { formatAlertMessage } from "@/lib/auth-errors";
 
 export function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
@@ -21,11 +22,51 @@ export function ForgotPasswordScreen() {
 
     const result = await requestPasswordReset(email);
 
-    if (result.success) {
+    // #region agent log
+    fetch("http://127.0.0.1:7891/ingest/2b6b089d-7eb8-434a-b07c-a2e87411d81f", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "d077e5",
+      },
+      body: JSON.stringify({
+        sessionId: "d077e5",
+        runId: "post-fix",
+        hypothesisId: "H1-H3",
+        location: "ForgotPasswordScreen.jsx:handleSubmit",
+        message: "server action result received",
+        data: {
+          resultType: typeof result,
+          resultIsArray: Array.isArray(result),
+          resultIsNull: result == null,
+          success: result?.success ?? null,
+          errorType: result?.error != null ? typeof result.error : null,
+          errorIsArray: Array.isArray(result?.error),
+          messageType: result?.message != null ? typeof result.message : null,
+          messageIsArray: Array.isArray(result?.message),
+          errorPreview:
+            result?.error != null
+              ? String(result.error).slice(0, 80)
+              : null,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+
+    if (result?.success) {
       setIsSuccess(true);
-      setMessage(result.message);
+      setMessage(
+        formatAlertMessage(
+          result.message,
+          "Resetlink verstuurd. Check ook je spam."
+        )
+      );
     } else {
-      setMessage(result.error);
+      setIsSuccess(false);
+      setMessage(
+        formatAlertMessage(result?.error, "Kon resetlink niet versturen.")
+      );
     }
 
     setIsSubmitting(false);

@@ -24,7 +24,45 @@ export function AuthLayout({ title, description, children }) {
 }
 
 export function AuthAlert({ message, variant = "error" }) {
+  // #region agent log
+  if (message != null && typeof message !== "string") {
+    fetch("http://127.0.0.1:7891/ingest/2b6b089d-7eb8-434a-b07c-a2e87411d81f", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "d077e5",
+      },
+      body: JSON.stringify({
+        sessionId: "d077e5",
+        runId: "pre-fix",
+        hypothesisId: "H1",
+        location: "AuthLayout.jsx:AuthAlert",
+        message: "non-string alert message",
+        data: {
+          messageType: typeof message,
+          messageIsArray: Array.isArray(message),
+          messagePreview: String(message).slice(0, 80),
+          variant,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+  }
+  // #endregion
+
   if (!message) {
+    return null;
+  }
+
+  const displayMessage =
+    typeof message === "string" &&
+    message.trim() &&
+    message.trim() !== "{}" &&
+    message.trim() !== "[]"
+      ? message.trim()
+      : null;
+
+  if (!displayMessage) {
     return null;
   }
 
@@ -39,7 +77,7 @@ export function AuthAlert({ message, variant = "error" }) {
           : "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200"
       }`}
     >
-      {message}
+      {displayMessage}
     </div>
   );
 }
