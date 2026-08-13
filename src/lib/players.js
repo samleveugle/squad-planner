@@ -50,13 +50,14 @@ export function getEventResponseSummary(players, eventId, responses) {
   return { present, doubt, absent, unanswered };
 }
 
-/** Compacte breakdown naast "Aanwezig", bv. "16 spelers / 1 staf". */
-export function formatPresentRoleBreakdown(presentPlayers) {
-  if (presentPlayers.length === 0) {
-    return null;
+/** Compacte breakdown, bv. "17 spelers" of "16 spelers / 1 staf". */
+export function formatRoleBreakdown(players) {
+  const { squad, staff } = splitPlayersByRole(players);
+
+  if (staff.length === 0) {
+    return `${squad.length} spelers`;
   }
 
-  const { squad, staff } = splitPlayersByRole(presentPlayers);
   return `${squad.length} spelers / ${staff.length} staf`;
 }
 

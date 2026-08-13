@@ -17,7 +17,7 @@ import {
   formatEventTime,
   getEventTitle,
 } from "@/lib/mock-data";
-import { formatPresentRoleBreakdown } from "@/lib/players";
+import { formatRoleBreakdown } from "@/lib/players";
 
 function EventAdminCard({ event, responses }) {
   const { getEventResponseSummary } = usePlayers();
@@ -25,7 +25,6 @@ function EventAdminCard({ event, responses }) {
     event.id,
     responses
   );
-  const presentBreakdown = formatPresentRoleBreakdown(present);
 
   return (
     <Card>
@@ -38,14 +37,17 @@ function EventAdminCard({ event, responses }) {
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
           <AvailabilityBadge status="present" />
-          <span className="text-sm text-muted-foreground">{present.length}</span>
-          {presentBreakdown && (
-            <span className="text-xs text-muted-foreground">{presentBreakdown}</span>
-          )}
+          <span className="text-sm text-muted-foreground">
+            {formatRoleBreakdown(present)}
+          </span>
           <AvailabilityBadge status="doubt" />
-          <span className="text-sm text-muted-foreground">{doubt.length}</span>
+          <span className="text-sm text-muted-foreground">
+            {formatRoleBreakdown(doubt)}
+          </span>
           <AvailabilityBadge status="absent" />
-          <span className="text-sm text-muted-foreground">{absent.length}</span>
+          <span className="text-sm text-muted-foreground">
+            {formatRoleBreakdown(absent)}
+          </span>
         </div>
 
         <div className="space-y-3">
