@@ -11,6 +11,7 @@ export function rowToEvent(row) {
     location: row.location,
     isHome: row.type === "match" ? (row.is_home ?? false) : undefined,
     opponent: row.opponent ?? null,
+    title: row.title ?? null,
   };
 }
 
@@ -23,5 +24,7 @@ export function eventToRow(event) {
     location: event.location,
     is_home: event.type === "match" ? Boolean(event.isHome) : null,
     opponent: event.opponent?.trim() || null,
+    title:
+      event.type === "evenement" ? event.title?.trim() || null : null,
   };
 }

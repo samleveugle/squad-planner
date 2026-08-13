@@ -32,7 +32,11 @@ export function AttendanceOverview({ events, attendance }) {
   const pastOrToday = useMemo(() => {
     const today = toDateString(new Date());
     return events
-      .filter((event) => event.date <= today)
+      .filter(
+        (event) =>
+          event.date <= today &&
+          (event.type === "training" || event.type === "match")
+      )
       .slice()
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [events]);

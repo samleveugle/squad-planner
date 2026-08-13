@@ -136,53 +136,12 @@ export async function registerWithEmailPassword(email, password, confirmPassword
 export async function requestPasswordReset(email) {
   const normalizedEmail = normalizeEmail(email);
 
-  // #region agent log
-  fetch("http://127.0.0.1:7891/ingest/2b6b089d-7eb8-434a-b07c-a2e87411d81f", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "d077e5",
-    },
-    body: JSON.stringify({
-      sessionId: "d077e5",
-      runId: "pre-fix",
-      hypothesisId: "H3",
-      location: "auth.js:requestPasswordReset:entry",
-      message: "requestPasswordReset called",
-      data: { hasEmail: Boolean(normalizedEmail), emailLength: normalizedEmail.length },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-
   if (!normalizedEmail) {
     return { success: false, error: "Vul je e-mailadres in." };
   }
 
   try {
     const player = await getPlayerByEmail(normalizedEmail);
-
-    // #region agent log
-    fetch("http://127.0.0.1:7891/ingest/2b6b089d-7eb8-434a-b07c-a2e87411d81f", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "d077e5",
-      },
-      body: JSON.stringify({
-        sessionId: "d077e5",
-        runId: "pre-fix",
-        hypothesisId: "H2",
-        location: "auth.js:requestPasswordReset:player",
-        message: "player lookup result",
-        data: {
-          playerFound: Boolean(player),
-          hasAuthUserId: Boolean(player?.auth_user_id),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
 
     if (!player) {
       return {
@@ -198,101 +157,21 @@ export async function requestPasswordReset(email) {
       redirectTo,
     });
 
-    // #region agent log
-    fetch("http://127.0.0.1:7891/ingest/2b6b089d-7eb8-434a-b07c-a2e87411d81f", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "d077e5",
-      },
-      body: JSON.stringify({
-        sessionId: "d077e5",
-        runId: "pre-fix",
-        hypothesisId: "H5",
-        location: "auth.js:requestPasswordReset:supabase",
-        message: "supabase resetPasswordForEmail result",
-        data: {
-          hasError: Boolean(error),
-          errorType: error ? typeof error : null,
-          errorMessageType: error?.message != null ? typeof error.message : null,
-          errorMessageIsArray: Array.isArray(error?.message),
-          errorName: error?.name ?? null,
-          errorCode: error?.code ?? null,
-          redirectToHost: redirectTo.split("/")[2] ?? null,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-
     if (error) {
       throw error;
     }
 
     await linkPlayerToExistingAuthUser(normalizedEmail);
 
-    const successResult = {
+    return {
       success: true,
       message: `Resetlink verstuurd naar ${normalizedEmail}. Check ook je spam.`,
     };
-
-    // #region agent log
-    fetch("http://127.0.0.1:7891/ingest/2b6b089d-7eb8-434a-b07c-a2e87411d81f", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "d077e5",
-      },
-      body: JSON.stringify({
-        sessionId: "d077e5",
-        runId: "pre-fix",
-        hypothesisId: "H3",
-        location: "auth.js:requestPasswordReset:success",
-        message: "returning success",
-        data: { success: true },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-
-    return successResult;
   } catch (error) {
-    const failResult = {
+    return {
       success: false,
       error: toAuthUserMessage(error, "Kon resetlink niet versturen."),
     };
-
-    // #region agent log
-    fetch("http://127.0.0.1:7891/ingest/2b6b089d-7eb8-434a-b07c-a2e87411d81f", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "d077e5",
-      },
-      body: JSON.stringify({
-        sessionId: "d077e5",
-        runId: "pre-fix",
-        hypothesisId: "H1-H5",
-        location: "auth.js:requestPasswordReset:catch",
-        message: "returning failure",
-        data: {
-          caughtType: typeof error,
-          caughtIsArray: Array.isArray(error),
-          messageType: typeof error?.message,
-          messageIsArray: Array.isArray(error?.message),
-          returnErrorType: typeof failResult.error,
-          returnErrorIsArray: Array.isArray(failResult.error),
-          returnErrorPreview:
-            typeof failResult.error === "string"
-              ? failResult.error.slice(0, 80)
-              : String(failResult.error).slice(0, 80),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-
-    return failResult;
   }
 }
 

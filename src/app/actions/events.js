@@ -10,9 +10,9 @@ function normalizeTime(time) {
   return trimmed || null;
 }
 
-function validateEventInput({ type, date, location, isHome }) {
-  if (type !== "training" && type !== "match") {
-    return "Type moet training of wedstrijd zijn.";
+function validateEventInput({ type, date, location, isHome, title }) {
+  if (type !== "training" && type !== "match" && type !== "evenement") {
+    return "Type moet training, wedstrijd of evenement zijn.";
   }
 
   if (!date?.trim()) {
@@ -29,6 +29,10 @@ function validateEventInput({ type, date, location, isHome }) {
 
   if (type === "match" && typeof isHome !== "boolean") {
     return "Kies thuis of uit voor een wedstrijd.";
+  }
+
+  if (type === "evenement" && !title?.trim()) {
+    return "Titel is verplicht voor een evenement.";
   }
 
   return null;
@@ -72,6 +76,7 @@ export async function createEvent({
   location,
   isHome,
   opponent,
+  title,
 }) {
   const auth = await requireAdminPlayer();
 
@@ -80,11 +85,13 @@ export async function createEvent({
   }
 
   const normalizedDate = date?.trim();
+  const normalizedTitle = title?.trim() || null;
   const validationError = validateEventInput({
     type,
     date: normalizedDate,
     location,
     isHome: type === "match" ? Boolean(isHome) : undefined,
+    title: normalizedTitle,
   });
 
   if (validationError) {
@@ -95,6 +102,7 @@ export async function createEvent({
     type,
     date: normalizedDate,
     isHome: Boolean(isHome),
+    title: normalizedTitle,
   });
 
   const event = {
@@ -105,6 +113,7 @@ export async function createEvent({
     location: location.trim(),
     isHome: type === "match" ? Boolean(isHome) : undefined,
     opponent: opponent?.trim() || null,
+    title: type === "evenement" ? normalizedTitle : null,
   };
 
   try {
@@ -180,12 +189,17 @@ export async function updateEvent(eventId, updates) {
           ? Boolean(updates.isHome)
           : Boolean(current.isHome)
         : undefined;
+    const nextTitle =
+      updates.title !== undefined
+        ? updates.title?.trim() || null
+        : current.title ?? null;
 
     const validationError = validateEventInput({
       type: nextType,
       date: nextDate,
       location: nextLocation,
       isHome: nextIsHome,
+      title: nextTitle,
     });
 
     if (validationError) {
@@ -204,6 +218,7 @@ export async function updateEvent(eventId, updates) {
         updates.opponent !== undefined
           ? updates.opponent?.trim() || null
           : current.opponent,
+      title: nextType === "evenement" ? nextTitle : null,
     };
 
     const { data, error } = await supabase

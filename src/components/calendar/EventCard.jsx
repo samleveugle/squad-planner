@@ -18,6 +18,7 @@ export function EventCard({
   currentPlayerId,
 }) {
   const isMatch = event.type === "match";
+  const isEvenement = event.type === "evenement";
 
   return (
     <Card>
@@ -32,14 +33,16 @@ export function EventCard({
           </div>
           <span
             className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-              isMatch
-                ? event.isHome
-                  ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
-                  : "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300"
-                : "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
+              isEvenement
+                ? "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300"
+                : isMatch
+                  ? event.isHome
+                    ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                    : "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300"
+                  : "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
             }`}
           >
-            {isMatch ? (event.isHome ? "Thuis" : "Uit") : "Training"}
+            {isEvenement ? "Evenement" : isMatch ? (event.isHome ? "Thuis" : "Uit") : "Training"}
           </span>
         </div>
       </CardHeader>

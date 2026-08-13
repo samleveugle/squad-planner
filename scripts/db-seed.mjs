@@ -39,6 +39,7 @@ function mapEvent(event) {
     location: event.location,
     is_home: event.type === "match" ? event.isHome : null,
     opponent: event.opponent ?? null,
+    title: event.type === "evenement" ? event.title ?? null : null,
   };
 }
 

@@ -96,6 +96,21 @@ export function MonthView({
           />
         ))}
       </div>
+
+      <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+          Training
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-blue-500" />
+          Wedstrijd
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-violet-500" />
+          Evenement
+        </span>
+      </div>
     </section>
   );
 }

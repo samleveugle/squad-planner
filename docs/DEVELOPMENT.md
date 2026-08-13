@@ -89,6 +89,14 @@ Migrations live in `supabase/migrations/` (including RLS policies in `006_rls_po
 npm run db:apply-event-attendance
 ```
 
+**Evenement type (008):** voegt `evenement` toe als eventtype + kolom `title` voor clubactiviteiten (kerstmarkt, teamevent, …). Draai na deploy:
+
+```bash
+npm run db:migrate
+```
+
+Of voer `supabase/migrations/008_event_type_evenement.sql` handmatig uit in de Supabase SQL Editor.
+
 On Windows, DB scripts use `--use-system-ca` for SSL.
 
 ---

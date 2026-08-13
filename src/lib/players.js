@@ -20,6 +20,25 @@ export function getPlayersByStatus(players, eventId, responses, status) {
   );
 }
 
+export function isStaffMember(player) {
+  return Boolean(player.isAdmin) && player.isSquadPlayer === false;
+}
+
+export function splitPlayersByRole(players) {
+  const squad = [];
+  const staff = [];
+
+  for (const player of players) {
+    if (isStaffMember(player)) {
+      staff.push(player);
+    } else {
+      squad.push(player);
+    }
+  }
+
+  return { squad, staff };
+}
+
 export function getEventResponseSummary(players, eventId, responses) {
   const present = getPlayersByStatus(players, eventId, responses, "present");
   const doubt = getPlayersByStatus(players, eventId, responses, "doubt");
@@ -29,6 +48,16 @@ export function getEventResponseSummary(players, eventId, responses) {
   );
 
   return { present, doubt, absent, unanswered };
+}
+
+/** Compacte breakdown naast "Aanwezig", bv. "16 spelers / 1 staf". */
+export function formatPresentRoleBreakdown(presentPlayers) {
+  if (presentPlayers.length === 0) {
+    return null;
+  }
+
+  const { squad, staff } = splitPlayersByRole(presentPlayers);
+  return `${squad.length} spelers / ${staff.length} staf`;
 }
 
 export function getPlayerName(players, playerId) {

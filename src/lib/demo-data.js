@@ -88,6 +88,21 @@ function buildEventsAroundToday() {
       isHome,
       opponent,
     });
+
+    if (weekOffset === 2) {
+      events.push({
+        id: toEventId({
+          type: "evenement",
+          date: toDateString(dateOnWeekday(week, 5)),
+          title: "Teamevent",
+        }),
+        type: "evenement",
+        date: toDateString(dateOnWeekday(week, 5)),
+        time: "19:00",
+        location: "Clubhuis Demo",
+        title: "Teamevent",
+      });
+    }
   }
 
   return events.sort((a, b) => a.date.localeCompare(b.date));

@@ -73,6 +73,13 @@ export const PLAYERS = [
   ...PLAYER_NAMES.map((name) => createPlayer(name)),
 ];
 
+/** Admin zonder ploegspeler-rol (staf, telt niet mee als speler). */
+export const ADMIN_ONLY_PLAYER_IDS = new Set(
+  ADMINS.filter((admin) => !admin.isSquadPlayer).map((admin) =>
+    toPlayerId(admin.name)
+  )
+);
+
 function generateSeasonEvents() {
   const events = [];
   const seasonStart = parseDate(SEASON.start);

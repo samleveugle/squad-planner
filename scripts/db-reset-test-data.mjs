@@ -33,7 +33,8 @@ try {
   await db.unsafe(sql);
   console.log(
     "✅ Gewist: availability, lineups, match_stats, event_attendance, availability_reminder_log"
-  );} catch (error) {
+  );
+} catch (error) {
   console.error("❌ Reset mislukt:", error.message);
   process.exit(1);
 } finally {

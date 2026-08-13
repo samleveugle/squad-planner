@@ -9,9 +9,26 @@ export function parseDate(dateString) {
   return new Date(`${dateString}T12:00:00`);
 }
 
-export function toEventId({ type, date, isHome }) {
+function slugifyTitle(title) {
+  const slug = (title ?? "event")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .slice(0, 40);
+
+  return slug || "event";
+}
+
+export function toEventId({ type, date, isHome, title }) {
   if (type === "training") {
     return `training-${date}`;
+  }
+
+  if (type === "evenement") {
+    return `evenement-${date}-${slugifyTitle(title)}`;
   }
 
   return isHome ? `match-home-${date}` : `match-away-${date}`;
@@ -101,6 +118,10 @@ export function getDefaultWeekStart(events) {
 export function getEventTitle(event) {
   if (event.type === "training") {
     return "Training";
+  }
+
+  if (event.type === "evenement") {
+    return event.title?.trim() || "Evenement";
   }
 
   if (event.isHome) {

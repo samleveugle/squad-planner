@@ -3,6 +3,7 @@
 import { AvailabilityBadge } from "@/components/availability/AvailabilityBadge";
 import { PlayerNameList } from "@/components/availability/PlayerNameList";
 import { usePlayers } from "@/context/PlayersContext";
+import { formatPresentRoleBreakdown } from "@/lib/players";
 
 export function EventTeamSummary({ eventId, responses, currentPlayerId }) {
   const { getEventResponseSummary } = usePlayers();
@@ -12,6 +13,7 @@ export function EventTeamSummary({ eventId, responses, currentPlayerId }) {
   );
   const respondedCount = present.length + doubt.length + absent.length;
   const totalPlayers = respondedCount + unanswered.length;
+  const presentBreakdown = formatPresentRoleBreakdown(present);
 
   return (
     <div className="space-y-3 rounded-lg border bg-muted/40 p-4">
@@ -24,9 +26,14 @@ export function EventTeamSummary({ eventId, responses, currentPlayerId }) {
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <AvailabilityBadge status="present" />
             <span className="text-xs text-muted-foreground">{present.length}</span>
+            {presentBreakdown && (
+              <span className="text-[11px] text-muted-foreground">
+                {presentBreakdown}
+              </span>
+            )}
           </div>
           <PlayerNameList players={present} emptyText="—" />
         </div>

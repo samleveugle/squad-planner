@@ -95,15 +95,28 @@ export function AttendanceEventForm({
   );
   const [statsOpen, setStatsOpen] = useState(false);
   const [message, setMessage] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [hasSavedLocally, setHasSavedLocally] = useState(false);
 
   const today = toDateString(new Date());
   const canEditByDate = event.date <= today;
-  const isLocked = readOnly || !canEditByDate;
+  const recorded = hasRecordedAttendance(attendance, event.id);
+  const isFormLocked =
+    readOnly ||
+    !canEditByDate ||
+    ((recorded || hasSavedLocally) && !isEditing);
+
+  const attendedCount = useMemo(
+    () => Object.values(draft).filter((entry) => entry.attended).length,
+    [draft]
+  );
 
   useEffect(() => {
     setDraft(
       createCombinedDraft(attendance, matchStats, event.id, squadPlayerIds)
     );
+    setIsEditing(false);
+    setHasSavedLocally(false);
   }, [attendance, matchStats, event.id, squadPlayerIds]);
 
   function updatePlayer(playerId, patch) {
@@ -118,7 +131,7 @@ export function AttendanceEventForm({
   }
 
   function handleSave() {
-    if (isLocked) {
+    if (isFormLocked) {
       return;
     }
 
@@ -149,6 +162,8 @@ export function AttendanceEventForm({
       draft: attendanceDraft,
       statsPayload: event.type === "match" ? buildStatsPayload(statsDraft) : {},
     });
+    setIsEditing(false);
+    setHasSavedLocally(true);
     setMessage("Opgeslagen.");
   }
 
@@ -160,7 +175,6 @@ export function AttendanceEventForm({
     );
   }
 
-  const recorded = hasRecordedAttendance(attendance, event.id);
   const isMatch = event.type === "match";
 
   return (
@@ -169,12 +183,6 @@ export function AttendanceEventForm({
         <p className="rounded-md border border-dashed bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
           Invullen mogelijk vanaf {formatEventDate(event.date)}.
         </p>
-      )}
-
-      {recorded && canEditByDate && (
-        <span className="text-xs font-medium text-emerald-600">
-          Aanwezigheid ingevuld
-        </span>
       )}
 
       <div className="space-y-3">
@@ -192,9 +200,9 @@ export function AttendanceEventForm({
                 <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
                   <input
                     type="checkbox"
-                    className="size-4 shrink-0 accent-primary"
+                    className="size-4 shrink-0 accent-primary dark:accent-neutral-900"
                     checked={Boolean(entry.attended)}
-                    disabled={isLocked}
+                    disabled={isFormLocked}
                     onChange={(inputEvent) =>
                       updatePlayer(player.id, {
                         attended: inputEvent.target.checked,
@@ -218,7 +226,7 @@ export function AttendanceEventForm({
                       label="Speelminuten"
                       value={entry.minutes}
                       placeholder={String(DEFAULT_MATCH_MINUTES)}
-                      disabled={isLocked}
+                      disabled={isFormLocked}
                       min={0}
                       max={120}
                       onFocus={selectInputValue}
@@ -234,7 +242,7 @@ export function AttendanceEventForm({
                         <StatNumberInput
                           label="Goals"
                           value={entry.goals}
-                          disabled={isLocked}
+                          disabled={isFormLocked}
                           min={0}
                           max={20}
                           onFocus={selectInputValue}
@@ -248,7 +256,7 @@ export function AttendanceEventForm({
                         <StatNumberInput
                           label="Assists"
                           value={entry.assists}
-                          disabled={isLocked}
+                          disabled={isFormLocked}
                           min={0}
                           max={20}
                           onFocus={selectInputValue}
@@ -269,7 +277,7 @@ export function AttendanceEventForm({
         })}
       </div>
 
-      {isMatch && canEditByDate && (
+      {isMatch && canEditByDate && !isFormLocked && (
         <Button
           type="button"
           size="sm"
@@ -281,10 +289,35 @@ export function AttendanceEventForm({
         </Button>
       )}
 
-      {!isLocked && (
-        <Button type="button" size="sm" onClick={handleSave}>
-          Opslaan
-        </Button>
+      {canEditByDate && !readOnly && (
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm tabular-nums text-muted-foreground">
+            {attendedCount} / {squadPlayers.length} aanwezig
+          </span>
+          {!isFormLocked ? (
+            <Button type="button" size="sm" onClick={handleSave}>
+              Opslaan
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setIsEditing(true);
+                setMessage("");
+              }}
+            >
+              Wijzigen
+            </Button>
+          )}
+        </div>
+      )}
+
+      {readOnly && (
+        <p className="text-sm tabular-nums text-muted-foreground">
+          {attendedCount} / {squadPlayers.length} aanwezig
+        </p>
       )}
 
       {message && <p className="text-sm text-muted-foreground">{message}</p>}

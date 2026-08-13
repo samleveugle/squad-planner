@@ -87,8 +87,9 @@ export function getEventMarkers(events) {
   const hasAwayMatch = events.some(
     (event) => event.type === "match" && !event.isHome
   );
+  const hasEvenement = events.some((event) => event.type === "evenement");
 
-  return { hasTraining, hasHomeMatch, hasAwayMatch };
+  return { hasTraining, hasHomeMatch, hasAwayMatch, hasEvenement };
 }
 
 export const WEEKDAY_LABELS = ["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"];

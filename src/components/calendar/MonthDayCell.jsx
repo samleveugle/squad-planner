@@ -45,6 +45,12 @@ export function MonthDayCell({ cell, events, onSelect }) {
               title="Uitwedstrijd"
             />
           )}
+          {markers.hasEvenement && (
+            <span
+              className="h-1.5 w-1.5 rounded-full bg-violet-500"
+              title="Evenement"
+            />
+          )}
         </div>
       )}
     </button>

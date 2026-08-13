@@ -38,6 +38,7 @@ function EventForm({ initial, submitLabel, onSubmit, onCancel }) {
   const [location, setLocation] = useState(initial?.location ?? DEFAULT_TRAINING.location);
   const [isHome, setIsHome] = useState(initial?.isHome ?? true);
   const [opponent, setOpponent] = useState(initial?.opponent ?? "");
+  const [title, setTitle] = useState(initial?.title ?? "");
   const [message, setMessage] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -48,6 +49,10 @@ function EventForm({ initial, submitLabel, onSubmit, onCancel }) {
       if (nextType === "training") {
         setTime(DEFAULT_TRAINING.time);
         setLocation(DEFAULT_TRAINING.location);
+      } else if (nextType === "evenement") {
+        setTime("");
+        setLocation("");
+        setTitle("");
       } else if (isHome) {
         setTime(DEFAULT_HOME_MATCH.time);
         setLocation(DEFAULT_HOME_MATCH.location);
@@ -84,6 +89,7 @@ function EventForm({ initial, submitLabel, onSubmit, onCancel }) {
       location,
       isHome: type === "match" ? isHome : undefined,
       opponent: type === "match" ? opponent : null,
+      title: type === "evenement" ? title : null,
     });
 
     if (result.success) {
@@ -109,6 +115,7 @@ function EventForm({ initial, submitLabel, onSubmit, onCancel }) {
         >
           <option value="training">Training</option>
           <option value="match">Wedstrijd</option>
+          <option value="evenement">Evenement</option>
         </select>
       </div>
 
@@ -150,6 +157,21 @@ function EventForm({ initial, submitLabel, onSubmit, onCancel }) {
           required
         />
       </div>
+
+      {type === "evenement" && (
+        <div className="space-y-2">
+          <label className="text-sm font-medium" htmlFor="event-title">
+            Titel
+          </label>
+          <Input
+            id="event-title"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="bijv. Kerstmarkt, Teamevent"
+            required
+          />
+        </div>
+      )}
 
       {type === "match" && (
         <>
@@ -255,6 +277,9 @@ function EventRow({ event, onUpdated, onDeleted, readOnly = false }) {
             {event.isHome ? "Thuis" : "Uit"}
             {event.opponent ? ` · vs ${event.opponent}` : ""}
           </p>
+        )}
+        {event.type === "evenement" && event.title && (
+          <p className="text-xs text-muted-foreground">{event.title}</p>
         )}
       </div>
 
@@ -377,8 +402,8 @@ export function EventsManager({
           <CardTitle className="text-base">Events deze week</CardTitle>
           <CardDescription>
             {readOnly
-              ? "Demo-agenda met trainings en wedstrijden (alleen bekijken)."
-              : "Trainingen manueel beheren; wedstrijden ook via RBFA sync (FC Hoje)."}
+              ? "Demo-agenda met trainingen, wedstrijden en evenementen (alleen bekijken)."
+              : "Trainingen en evenementen manueel beheren; wedstrijden ook via RBFA sync (FC Hoje)."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
