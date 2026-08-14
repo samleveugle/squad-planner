@@ -13,13 +13,19 @@ import {
 
 export function PublishedLineup({
   lineup,
+  eventId = null,
   currentPlayerId = null,
   compact = false,
   onView,
 }) {
   useEffect(() => {
+    if (eventId) {
+      onView?.(eventId);
+      return;
+    }
+
     onView?.();
-  }, []);
+  }, [eventId, onView]);
 
   if (!lineup?.published) {
     return null;

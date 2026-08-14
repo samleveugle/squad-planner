@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 
-import { useSystemCertificates } from "@/lib/node-ssl";
+import { configureSystemCertificates } from "@/lib/node-ssl";
 
-useSystemCertificates();
+configureSystemCertificates();
 
 let adminClient;
 

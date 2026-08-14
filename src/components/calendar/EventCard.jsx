@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/card";
 import { AvailabilityPicker } from "@/components/availability/AvailabilityPicker";
 import { EventTeamSummary } from "@/components/availability/EventTeamSummary";
-import { formatEventDate, formatEventTime, getEventTitle } from "@/lib/mock-data";
+import { formatEventDate, formatEventTime, getEventTitle } from "@/lib/events";
 
 export function EventCard({
   event,

@@ -17,7 +17,7 @@ import {
   formatEventDate,
   formatEventTime,
   getEventTitle,
-} from "@/lib/mock-data";
+} from "@/lib/events";
 
 export function StatsManager({
   events,

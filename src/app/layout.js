@@ -15,7 +15,6 @@ export const metadata = {
   title: "Squad Planner",
   description: "Voetbalkalender en beschikbaarheid voor je ploeg",
   manifest: "/manifest.json",
-  themeColor: "#0B1221",
   icons: {
     icon: [
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
@@ -28,6 +27,10 @@ export const metadata = {
     title: "Squad Planner",
     statusBarStyle: "black-translucent",
   },
+};
+
+export const viewport = {
+  themeColor: "#0B1221",
 };
 
 export default function RootLayout({ children }) {

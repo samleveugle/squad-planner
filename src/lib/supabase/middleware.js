@@ -1,7 +1,25 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 
+function hasSupabaseAuthCookie(request) {
+  return request.cookies.getAll().some(
+    (cookie) => cookie.name.startsWith("sb-") && cookie.value
+  );
+}
+
+function clearSupabaseAuthCookies(request, response) {
+  for (const cookie of request.cookies.getAll()) {
+    if (cookie.name.startsWith("sb-")) {
+      response.cookies.set(cookie.name, "", { maxAge: 0, path: "/" });
+    }
+  }
+}
+
 export async function updateSession(request) {
+  if (!hasSupabaseAuthCookie(request)) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -25,7 +43,12 @@ export async function updateSession(request) {
     }
   );
 
-  await supabase.auth.getUser();
+  const { error } = await supabase.auth.getUser();
+
+  if (error) {
+    await supabase.auth.signOut().catch(() => {});
+    clearSupabaseAuthCookies(request, supabaseResponse);
+  }
 
   return supabaseResponse;
 }

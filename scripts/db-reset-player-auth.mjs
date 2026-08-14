@@ -92,4 +92,4 @@ if (updateError) {
 }
 
 console.log("✅ players.auth_user_id gewist");
-console.log("\nJacky kan nu opnieuw registreren via /register\n");
+console.log(`\n${player.name} kan nu opnieuw registreren via /register\n`);

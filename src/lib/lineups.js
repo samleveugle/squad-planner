@@ -2,9 +2,31 @@ import { DEFAULT_FORMATION, createEmptyPositions } from "@/lib/formations";
 import { getEventResponseSummary as getEventResponseSummaryForPlayers } from "@/lib/players";
 
 export const MAX_BENCH_PLAYERS = 5;
+export const MAX_EXTRA_BENCH_PLAYERS = 3;
+export const MAX_BENCH_TOTAL = MAX_BENCH_PLAYERS + MAX_EXTRA_BENCH_PLAYERS;
 export const MAX_STAFF = 3;
+export const MAX_EXTRA_STAFF = 2;
+export const MAX_STAFF_TOTAL = MAX_STAFF + MAX_EXTRA_STAFF;
 export const MIN_SHIRT_NUMBER = 1;
 export const MAX_SHIRT_NUMBER = 21;
+
+export function getVisibleBenchSlotCount(bench = []) {
+  return Math.min(MAX_BENCH_TOTAL, Math.max(MAX_BENCH_PLAYERS, bench.length));
+}
+
+export function getVisibleStaffSlotCount(staff = []) {
+  return Math.min(MAX_STAFF_TOTAL, Math.max(MAX_STAFF, staff.length));
+}
+
+export function getBenchDisplaySlots(bench = []) {
+  const count = getVisibleBenchSlotCount(bench);
+  return Array.from({ length: count }, (_, index) => bench[index] ?? null);
+}
+
+export function getStaffDisplaySlots(staff = []) {
+  const count = getVisibleStaffSlotCount(staff);
+  return Array.from({ length: count }, (_, index) => staff[index] ?? null);
+}
 
 export function createEmptyLineup(formation = DEFAULT_FORMATION) {
   return {

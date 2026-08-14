@@ -1,7 +1,7 @@
 import { Bell, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { getEventTitle } from "@/lib/mock-data";
+import { getEventTitle } from "@/lib/events";
 
 export function LineupNotificationBanner({
   unseenEvents,

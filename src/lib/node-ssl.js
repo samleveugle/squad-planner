@@ -2,7 +2,7 @@ import { getCACertificates, setDefaultCACertificates } from "node:tls";
 
 let configured = false;
 
-export function useSystemCertificates() {
+export function configureSystemCertificates() {
   if (configured) {
     return;
   }

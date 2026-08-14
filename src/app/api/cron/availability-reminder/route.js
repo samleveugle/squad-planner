@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 
 import {
   AVAILABILITY_REMINDER_MESSAGE,
-  buildResponsesMap,
-  getIncompleteSquadPlayerIds,
+  getAvailabilityReminderRecipientIds,
   getUpcomingWeekStart,
   getWeekStartKey,
 } from "@/lib/availability-reminder";
@@ -83,7 +82,6 @@ export async function GET(request) {
     const [
       { data: playerRows, error: playersError },
       { data: eventRows, error: eventsError },
-      { data: availabilityRows, error: availabilityError },
       { data: pushRows, error: pushError },
     ] = await Promise.all([
       supabase
@@ -91,7 +89,6 @@ export async function GET(request) {
         .select("id, name, is_admin, is_squad_player, auth_user_id")
         .not("auth_user_id", "is", null),
       supabase.from("events").select("id, type, date, time, location, is_home, opponent"),
-      supabase.from("availability").select("player_id, event_id, status"),
       supabase.from("push_preferences").select("player_id, enabled").eq("enabled", true),
     ]);
 
@@ -103,10 +100,6 @@ export async function GET(request) {
       throw eventsError;
     }
 
-    if (availabilityError) {
-      throw availabilityError;
-    }
-
     if (pushError) {
       throw pushError;
     }
@@ -116,13 +109,11 @@ export async function GET(request) {
       authUserId: row.auth_user_id,
     }));
     const events = eventRows ?? [];
-    const responses = buildResponsesMap(availabilityRows ?? []);
     const pushEnabledPlayerIds = (pushRows ?? []).map((row) => row.player_id);
 
-    const recipientIds = getIncompleteSquadPlayerIds({
+    const recipientIds = getAvailabilityReminderRecipientIds({
       players,
       events,
-      responses,
       weekStart,
       pushEnabledPlayerIds,
     });
@@ -143,7 +134,7 @@ export async function GET(request) {
         success: true,
         weekStart: weekStartKey,
         recipientCount: 0,
-        message: "Geen spelers met openstaande beschikbaarheid en actieve push.",
+        message: "Geen spelers met actieve push of geen events in komende week.",
         rbfaSync,
       });
     }

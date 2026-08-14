@@ -35,7 +35,6 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
     "postgres": "^3.4.9",
-    "prisma": "^7.8.0",
     "tailwindcss": "^4"
   }
 }

@@ -35,7 +35,12 @@ export async function getCurrentPlayer() {
     error: userError,
   } = await supabase.auth.getUser();
 
-  if (userError || !user) {
+  if (userError) {
+    await supabase.auth.signOut().catch(() => {});
+    return null;
+  }
+
+  if (!user) {
     return null;
   }
 

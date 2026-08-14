@@ -12,11 +12,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  AVAILABILITY,
   formatEventDate,
   formatEventTime,
   getEventTitle,
-} from "@/lib/mock-data";
+} from "@/lib/events";
+import { AVAILABILITY } from "@/lib/mock-data";
 import { formatRoleBreakdown } from "@/lib/players";
 
 function EventAdminCard({ event, responses }) {

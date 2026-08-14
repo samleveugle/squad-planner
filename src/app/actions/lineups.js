@@ -7,6 +7,11 @@ import {
   normalizeLineup,
   validateLineupNumbers,
 } from "@/lib/lineups";
+import { sendPushToExternalIds } from "@/lib/onesignal";
+import {
+  fetchPushEnabledSquadPlayerIds,
+  LINEUP_PUBLISHED_MESSAGE,
+} from "@/lib/push-recipients";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 function validateLineupPayload(lineupData) {
@@ -133,7 +138,25 @@ export async function publishLineup(eventId, lineupData) {
       throw error;
     }
 
-    return { success: true, publishedAt };
+    let pushWarning = null;
+
+    try {
+      const recipientIds = await fetchPushEnabledSquadPlayerIds(supabase);
+
+      if (recipientIds.length > 0) {
+        await sendPushToExternalIds({
+          externalIds: recipientIds,
+          heading: "Squad Planner",
+          message: LINEUP_PUBLISHED_MESSAGE,
+          url: process.env.NEXT_PUBLIC_SITE_URL,
+        });
+      }
+    } catch (pushError) {
+      console.error("[publishLineup] Push notification failed:", pushError);
+      pushWarning = pushError?.message ?? "Kon pushmelding niet versturen.";
+    }
+
+    return { success: true, publishedAt, pushWarning };
   } catch (error) {
     return {
       success: false,

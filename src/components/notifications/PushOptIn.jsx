@@ -200,9 +200,7 @@ export function PushOptIn({ currentPlayer }) {
       setEnabled(true);
       setSdkStatus("ready");
       setMessageTone("success");
-      setMessage(
-        "Meldingen staan aan. Je krijgt enkel een herinnering als je beschikbaarheid nog ontbreekt."
-      );
+      setMessage("Meldingen staan aan, je ontvangt updates.");
     } catch (error) {
       setEnabled(false);
       setSdkStatus("error");

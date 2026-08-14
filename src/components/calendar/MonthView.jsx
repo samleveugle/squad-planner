@@ -11,7 +11,7 @@ import {
   isMonthInSeason,
   WEEKDAY_LABELS,
 } from "@/lib/calendar";
-import { getWeekStart } from "@/lib/mock-data";
+import { getWeekStart } from "@/lib/events";
 
 export function MonthView({
   events,

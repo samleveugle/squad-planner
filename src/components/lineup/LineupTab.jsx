@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 import { PublishedLineup } from "@/components/lineup/PublishedLineup";
 import { WeekNavigator } from "@/components/calendar/WeekNavigator";
@@ -15,7 +15,7 @@ import {
   formatEventDate,
   formatEventTime,
   getEventTitle,
-} from "@/lib/mock-data";
+} from "@/lib/events";
 import { getPublishedLineup } from "@/lib/lineups";
 
 export function LineupTab({
@@ -26,14 +26,18 @@ export function LineupTab({
   currentPlayerId,
   onLineupViewed,
 }) {
-  const matchEvents = events.filter((event) => event.type === "match");
-  const publishedMatches = matchEvents.filter((event) =>
-    getPublishedLineup(lineups, event.id)
+  const matchEvents = useMemo(
+    () => events.filter((event) => event.type === "match"),
+    [events]
+  );
+  const publishedMatches = useMemo(
+    () => matchEvents.filter((event) => getPublishedLineup(lineups, event.id)),
+    [matchEvents, lineups]
   );
 
   useEffect(() => {
     publishedMatches.forEach((event) => onLineupViewed?.(event.id));
-  }, [weekStart, lineups]);
+  }, [publishedMatches, onLineupViewed]);
 
   return (
     <section className="space-y-4">
@@ -66,8 +70,9 @@ export function LineupTab({
                 <CardContent>
                   <PublishedLineup
                     lineup={lineup}
+                    eventId={event.id}
                     currentPlayerId={currentPlayerId}
-                    onView={() => onLineupViewed?.(event.id)}
+                    onView={onLineupViewed}
                   />
                 </CardContent>
               </Card>

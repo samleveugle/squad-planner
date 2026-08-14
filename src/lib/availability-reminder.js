@@ -1,6 +1,5 @@
-import { isValidAvailabilityStatus } from "@/lib/availability";
 import { addWeeks, getEventsForWeek, getWeekStart, toDateString } from "@/lib/events";
-import { getResponseKey } from "@/lib/mock-data";
+import { getPushEnabledSquadPlayerIds } from "@/lib/push-recipients";
 
 export const AVAILABILITY_REMINDER_MESSAGE =
   "Vergeet je aanwezigheid voor komende week niet in te vullen.";
@@ -15,24 +14,9 @@ export function getWeekStartKey(weekStart) {
   return toDateString(getWeekStart(weekStart));
 }
 
-export function buildResponsesMap(rows) {
-  return rows.reduce((responses, row) => {
-    responses[getResponseKey(row.player_id, row.event_id)] = row.status;
-    return responses;
-  }, {});
-}
-
-export function playerHasCompleteAvailability(playerId, weekEvents, responses) {
-  return weekEvents.every((event) => {
-    const status = responses[getResponseKey(playerId, event.id)];
-    return isValidAvailabilityStatus(status);
-  });
-}
-
-export function getIncompleteSquadPlayerIds({
+export function getAvailabilityReminderRecipientIds({
   players,
   events,
-  responses,
   weekStart,
   pushEnabledPlayerIds,
 }) {
@@ -42,19 +26,5 @@ export function getIncompleteSquadPlayerIds({
     return [];
   }
 
-  const pushEnabled = new Set(pushEnabledPlayerIds);
-
-  return players
-    .filter((player) => {
-      if (!player.isSquadPlayer || !player.authUserId) {
-        return false;
-      }
-
-      if (!pushEnabled.has(player.id)) {
-        return false;
-      }
-
-      return !playerHasCompleteAvailability(player.id, weekEvents, responses);
-    })
-    .map((player) => player.id);
+  return getPushEnabledSquadPlayerIds({ players, pushEnabledPlayerIds });
 }

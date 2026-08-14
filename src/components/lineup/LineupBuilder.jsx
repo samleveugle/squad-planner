@@ -25,8 +25,12 @@ import {
   getAllAssignedPlayerIds,
   getEligiblePlayers,
   getMatchSquadPlayerIds,
+  getVisibleBenchSlotCount,
+  getVisibleStaffSlotCount,
   MAX_BENCH_PLAYERS,
+  MAX_BENCH_TOTAL,
   MAX_STAFF,
+  MAX_STAFF_TOTAL,
   normalizeLineup,
   pruneLineupNumbers,
   validateLineupNumbers,
@@ -42,23 +46,51 @@ function compactArray(values) {
   return values.filter(Boolean);
 }
 
+function collapseTrailingEmptyExtras(values, baseCount) {
+  let visible = values.length;
+  while (visible > baseCount && !values[visible - 1]) {
+    visible -= 1;
+  }
+  return visible;
+}
+
+function createLineupEditorState(savedLineup) {
+  const lineup = normalizeLineup(savedLineup);
+  const visibleBenchSlots = getVisibleBenchSlotCount(lineup.bench);
+  const visibleStaffSlots = getVisibleStaffSlotCount(lineup.staff);
+
+  return {
+    formation: lineup.formation,
+    positions: lineup.positions,
+    bench: toFilledArray(lineup.bench, visibleBenchSlots),
+    staff: toFilledArray(lineup.staff, visibleStaffSlots),
+    numbers: lineup.numbers ?? {},
+    visibleBenchSlots,
+    visibleStaffSlots,
+  };
+}
+
 export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish, onUnpublish }) {
   const { players } = usePlayers();
-  const normalizedSaved = normalizeLineup(savedLineup);
-  const [formation, setFormation] = useState(normalizedSaved.formation);
-  const [positions, setPositions] = useState(normalizedSaved.positions);
-  const [bench, setBench] = useState(() => toFilledArray(normalizedSaved.bench, MAX_BENCH_PLAYERS));
-  const [staff, setStaff] = useState(() => toFilledArray(normalizedSaved.staff, MAX_STAFF));
-  const [numbers, setNumbers] = useState(normalizedSaved.numbers ?? {});
+  const initialState = createLineupEditorState(savedLineup);
+  const [formation, setFormation] = useState(initialState.formation);
+  const [positions, setPositions] = useState(initialState.positions);
+  const [bench, setBench] = useState(initialState.bench);
+  const [staff, setStaff] = useState(initialState.staff);
+  const [numbers, setNumbers] = useState(initialState.numbers);
+  const [visibleBenchSlots, setVisibleBenchSlots] = useState(initialState.visibleBenchSlots);
+  const [visibleStaffSlots, setVisibleStaffSlots] = useState(initialState.visibleStaffSlots);
   const [savedMessage, setSavedMessage] = useState("");
 
   useEffect(() => {
-    const lineup = normalizeLineup(savedLineup);
-    setFormation(lineup.formation);
-    setPositions(lineup.positions);
-    setBench(toFilledArray(lineup.bench, MAX_BENCH_PLAYERS));
-    setStaff(toFilledArray(lineup.staff, MAX_STAFF));
-    setNumbers(lineup.numbers ?? {});
+    const nextState = createLineupEditorState(savedLineup);
+    setFormation(nextState.formation);
+    setPositions(nextState.positions);
+    setBench(nextState.bench);
+    setStaff(nextState.staff);
+    setNumbers(nextState.numbers);
+    setVisibleBenchSlots(nextState.visibleBenchSlots);
+    setVisibleStaffSlots(nextState.visibleStaffSlots);
   }, [savedLineup, event.id]);
 
   const eligiblePlayers = getEligiblePlayers(event.id, responses, players);
@@ -149,6 +181,15 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
     setBench((current) => {
       const next = [...current];
       next[index] = nextPlayerId;
+
+      if (!nextPlayerId) {
+        const nextVisible = collapseTrailingEmptyExtras(next, MAX_BENCH_PLAYERS);
+        if (nextVisible !== current.length) {
+          setVisibleBenchSlots(nextVisible);
+          return next.slice(0, nextVisible);
+        }
+      }
+
       return next;
     });
 
@@ -165,6 +206,15 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
     setStaff((current) => {
       const next = [...current];
       next[index] = nextPlayerId;
+
+      if (!nextPlayerId) {
+        const nextVisible = collapseTrailingEmptyExtras(next, MAX_STAFF);
+        if (nextVisible !== current.length) {
+          setVisibleStaffSlots(nextVisible);
+          return next.slice(0, nextVisible);
+        }
+      }
+
       return next;
     });
 
@@ -172,6 +222,50 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
       removePlayerFromOthers(nextPlayerId, { keepStaffIndex: index });
     }
 
+    setSavedMessage("");
+  }
+
+  function handleAddExtraBenchSlot() {
+    if (visibleBenchSlots >= MAX_BENCH_TOTAL) {
+      return;
+    }
+
+    const nextVisible = visibleBenchSlots + 1;
+    setVisibleBenchSlots(nextVisible);
+    setBench((current) => toFilledArray(current, nextVisible));
+    setSavedMessage("");
+  }
+
+  function handleRemoveExtraBenchSlot() {
+    if (visibleBenchSlots <= MAX_BENCH_PLAYERS || bench[visibleBenchSlots - 1]) {
+      return;
+    }
+
+    const nextVisible = visibleBenchSlots - 1;
+    setVisibleBenchSlots(nextVisible);
+    setBench((current) => current.slice(0, nextVisible));
+    setSavedMessage("");
+  }
+
+  function handleAddExtraStaffSlot() {
+    if (visibleStaffSlots >= MAX_STAFF_TOTAL) {
+      return;
+    }
+
+    const nextVisible = visibleStaffSlots + 1;
+    setVisibleStaffSlots(nextVisible);
+    setStaff((current) => toFilledArray(current, nextVisible));
+    setSavedMessage("");
+  }
+
+  function handleRemoveExtraStaffSlot() {
+    if (visibleStaffSlots <= MAX_STAFF || staff[visibleStaffSlots - 1]) {
+      return;
+    }
+
+    const nextVisible = visibleStaffSlots - 1;
+    setVisibleStaffSlots(nextVisible);
+    setStaff((current) => current.slice(0, nextVisible));
     setSavedMessage("");
   }
 
@@ -251,13 +345,13 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
       return;
     }
 
-    if (benchCount > MAX_BENCH_PLAYERS) {
-      setSavedMessage(`Maximaal ${MAX_BENCH_PLAYERS} bankspelers toegestaan.`);
+    if (benchCount > MAX_BENCH_TOTAL) {
+      setSavedMessage(`Maximaal ${MAX_BENCH_TOTAL} bankspelers toegestaan.`);
       return;
     }
 
-    if (staffCount > MAX_STAFF) {
-      setSavedMessage(`Maximaal ${MAX_STAFF} stafleden toegestaan.`);
+    if (staffCount > MAX_STAFF_TOTAL) {
+      setSavedMessage(`Maximaal ${MAX_STAFF_TOTAL} stafleden toegestaan.`);
       return;
     }
 
@@ -303,8 +397,8 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
       <LineupDisplay
         formationId={formation}
         positions={positions}
-        bench={bench}
-        staff={staff}
+        bench={bench.slice(0, visibleBenchSlots)}
+        staff={staff.slice(0, visibleStaffSlots)}
         numbers={numbers}
       />
 
@@ -346,7 +440,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
       <div>
         <p className="mb-2 text-sm font-medium">Bank</p>
         <div className="grid gap-2 sm:grid-cols-2">
-          {bench.map((playerId, index) => (
+          {bench.slice(0, visibleBenchSlots).map((playerId, index) => (
             <div key={`bench-select-${index}`} className="flex items-center gap-2">
               <span className="w-12 shrink-0 text-xs font-semibold text-muted-foreground">
                 Bank {index + 1}
@@ -376,12 +470,37 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
             </div>
           ))}
         </div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {visibleBenchSlots < MAX_BENCH_TOTAL && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 text-xs text-muted-foreground"
+              onClick={handleAddExtraBenchSlot}
+            >
+              + Extra bankspeler
+            </Button>
+          )}
+          {visibleBenchSlots > MAX_BENCH_PLAYERS &&
+            !bench[visibleBenchSlots - 1] && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-xs text-muted-foreground"
+                onClick={handleRemoveExtraBenchSlot}
+              >
+                Extra slot verwijderen
+              </Button>
+            )}
+        </div>
       </div>
 
       <div>
         <p className="mb-2 text-sm font-medium">Staf</p>
         <div className="grid gap-2 sm:grid-cols-2">
-          {staff.map((playerId, index) => (
+          {staff.slice(0, visibleStaffSlots).map((playerId, index) => (
             <div key={`staff-select-${index}`} className="flex items-center gap-2">
               <span className="w-12 shrink-0 text-xs font-semibold text-muted-foreground">
                 Staf {index + 1}
@@ -405,11 +524,35 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
             </div>
           ))}
         </div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {visibleStaffSlots < MAX_STAFF_TOTAL && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 text-xs text-muted-foreground"
+              onClick={handleAddExtraStaffSlot}
+            >
+              + Extra staflid
+            </Button>
+          )}
+          {visibleStaffSlots > MAX_STAFF && !staff[visibleStaffSlots - 1] && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 text-xs text-muted-foreground"
+              onClick={handleRemoveExtraStaffSlot}
+            >
+              Extra slot verwijderen
+            </Button>
+          )}
+        </div>
       </div>
 
       <p className="text-xs text-muted-foreground">
         Veld: {filledCount}/{formationData.positions.length} · Bank: {benchCount}/
-        {MAX_BENCH_PLAYERS} · Staf: {staffCount}/{MAX_STAFF}
+        {visibleBenchSlots} · Staf: {staffCount}/{visibleStaffSlots}
         {savedLineup?.publishedAt && isPublished && (
           <> · Laatst gepubliceerd: {formatPublishedAt(savedLineup.publishedAt)}</>
         )}

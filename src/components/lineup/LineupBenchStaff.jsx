@@ -1,7 +1,11 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { formatPlayerWithNumber, MAX_BENCH_PLAYERS, MAX_STAFF } from "@/lib/lineups";
+import {
+  formatPlayerWithNumber,
+  getBenchDisplaySlots,
+  getStaffDisplaySlots,
+} from "@/lib/lineups";
 import { usePlayers } from "@/context/PlayersContext";
 
 function PlayerBadge({ playerId, highlight = false, label, shirtNumber = null }) {
@@ -34,8 +38,8 @@ export function LineupBenchStaff({
   numbers = {},
   highlightPlayerId = null,
 }) {
-  const benchSlots = Array.from({ length: MAX_BENCH_PLAYERS }, (_, index) => bench[index] ?? null);
-  const staffSlots = Array.from({ length: MAX_STAFF }, (_, index) => staff[index] ?? null);
+  const benchSlots = getBenchDisplaySlots(bench);
+  const staffSlots = getStaffDisplaySlots(staff);
 
   return (
     <div className="flex flex-col gap-4">

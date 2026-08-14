@@ -1,9 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-import { useSystemCertificates } from "@/lib/node-ssl";
+import { configureSystemCertificates } from "@/lib/node-ssl";
 
-useSystemCertificates();
+configureSystemCertificates();
 
 export async function createClient() {
   const cookieStore = await cookies();

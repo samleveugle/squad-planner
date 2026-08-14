@@ -2,7 +2,7 @@
 
 **Team planning app for amateur football clubs** — availability, lineups, match stats and calendar sync in one place.
 
-Built as a real product for a club team, with authentication, roles, push reminders and automatic RBFA (Belgian FA) calendar sync.
+Built as a real product for a club team, with authentication, roles, push notifications and automatic RBFA (Belgian FA) calendar sync.
 
 | | |
 |---|---|
@@ -38,14 +38,16 @@ Amateur clubs often organise via WhatsApp and spreadsheets: who is available, wh
 
 ## Features
 
-- **Calendar** — trainings & matches (week / month views)
+- **Calendar** — trainings, matches & club events (week / month views)
 - **Availability** — present / doubt / absent per event, with live team overview
 - **Lineups** — formations, pitch, bench & staff; publish for the squad
 - **Match stats** — goals & assists + season totals
+- **Event attendance** — admin records who was actually present (separate from RSVP availability)
 - **Roles** — admin vs player (role switch when you are both)
 - **Auth** — email + password (invite-only: admin registers emails)
-- **Push reminders** — weekly availability nudge (OneSignal + Vercel Cron)
+- **Push notifications** — weekly availability reminder (Sunday 20:00) + alert when a lineup is published (OneSignal + Vercel Cron)
 - **RBFA sync** — match calendar imported from the Belgian Football Association API
+- **Dark mode** — light / dark theme toggle
 - **PWA** — add to home screen (iOS / Android) with custom app icon
 - **Public demo** — recruiter-friendly, fictional data, read-only
 
@@ -81,6 +83,7 @@ Amateur clubs often organise via WhatsApp and spreadsheets: who is available, wh
 | 10 | PWA homescreen icons (iOS / Android) | Done |
 | 11 | Row Level Security policies | Done |
 | 12 | Public read-only demo for portfolio | Done |
+| 13 | Attendance tracking, club events & lineup push alerts | Done |
 
 --- 
 
