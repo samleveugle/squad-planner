@@ -146,7 +146,6 @@ export async function publishLineup(eventId, lineupData) {
       if (recipientIds.length > 0) {
         await sendPushToExternalIds({
           externalIds: recipientIds,
-          heading: "Squad Planner",
           message: LINEUP_PUBLISHED_MESSAGE,
           url: process.env.NEXT_PUBLIC_SITE_URL,
         });

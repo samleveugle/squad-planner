@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { createEvent, deleteEvent, updateEvent } from "@/app/actions/events";
 import { syncRbfaCalendarAction } from "@/app/actions/rbfa-sync";
+import { EventTitleBlock } from "@/components/events/EventTitleBlock";
 import { WeekNavigator } from "@/components/calendar/WeekNavigator";
 import { Button } from "@/components/ui/button";
 import {
@@ -268,19 +269,10 @@ function EventRow({ event, onUpdated, onDeleted, readOnly = false }) {
   return (
     <div className="flex flex-col gap-3 rounded-lg border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="space-y-1">
-        <p className="font-medium">{getEventTitle(event)}</p>
+        <EventTitleBlock event={event} variant="plain" />
         <p className="text-xs text-muted-foreground">
           {formatEventDate(event.date)} · {formatEventTime(event)} · {event.location}
         </p>
-        {event.type === "match" && (
-          <p className="text-xs text-muted-foreground">
-            {event.isHome ? "Thuis" : "Uit"}
-            {event.opponent ? ` · vs ${event.opponent}` : ""}
-          </p>
-        )}
-        {event.type === "evenement" && event.title && (
-          <p className="text-xs text-muted-foreground">{event.title}</p>
-        )}
       </div>
 
       {!readOnly && (

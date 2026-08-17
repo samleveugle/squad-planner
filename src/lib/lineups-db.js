@@ -11,6 +11,7 @@ export function rowToLineup(row) {
     bench: row.bench ?? [],
     staff: row.staff ?? [],
     numbers: row.numbers ?? {},
+    captainId: row.captain_id ?? null,
     published: row.published ?? false,
     publishedAt: row.published_at ?? null,
   });
@@ -26,6 +27,7 @@ export function lineupToRow(eventId, lineup) {
     bench: normalized.bench,
     staff: normalized.staff,
     numbers: normalized.numbers ?? {},
+    captain_id: normalized.captainId ?? null,
     published: normalized.published ?? false,
     published_at: normalized.publishedAt ?? null,
     updated_at: new Date().toISOString(),

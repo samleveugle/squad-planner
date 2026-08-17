@@ -4,7 +4,6 @@ import { useEffect } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { LineupDisplay } from "@/components/lineup/LineupDisplay";
-import { getFormation } from "@/lib/formations";
 import {
   formatPublishedAt,
   getPlayerLineupRole,
@@ -32,7 +31,6 @@ export function PublishedLineup({
   }
 
   const filledCount = Object.values(lineup.positions).filter(Boolean).length;
-  const formation = getFormation(lineup.formation);
   const bench = lineup.bench ?? [];
   const staff = lineup.staff ?? [];
   const numbers = lineup.numbers ?? {};
@@ -59,12 +57,13 @@ export function PublishedLineup({
         bench={bench}
         staff={staff}
         numbers={numbers}
+        captainId={lineup.captainId}
         compact={compact}
         highlightPlayerId={currentPlayerId}
       />
 
       <p className="text-center text-xs text-muted-foreground">
-        Veld: {filledCount}/{formation.positions.length}
+        Veld: {filledCount}
         {bench.length > 0 && ` · Bank: ${bench.length}`}
         {staff.length > 0 && ` · Staf: ${staff.length}`}
         {roleLabel && ` · Jij staat op de ${roleLabel.toLowerCase()}!`}

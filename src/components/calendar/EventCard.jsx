@@ -1,13 +1,13 @@
+import { AvailabilityPicker } from "@/components/availability/AvailabilityPicker";
+import { EventTeamSummary } from "@/components/availability/EventTeamSummary";
+import { EventTitleBlock } from "@/components/events/EventTitleBlock";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
-import { AvailabilityPicker } from "@/components/availability/AvailabilityPicker";
-import { EventTeamSummary } from "@/components/availability/EventTeamSummary";
-import { formatEventDate, formatEventTime, getEventTitle } from "@/lib/events";
+import { formatEventDate, formatEventTime } from "@/lib/events";
 
 export function EventCard({
   event,
@@ -25,7 +25,7 @@ export function EventCard({
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <CardTitle className="text-lg">{getEventTitle(event)}</CardTitle>
+            <EventTitleBlock event={event} />
             <CardDescription>
               {formatEventDate(event.date)} · {formatEventTime(event)} ·{" "}
               {event.location}
@@ -48,7 +48,6 @@ export function EventCard({
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <p className="mb-3 text-sm text-muted-foreground">Jouw beschikbaarheid</p>
           <AvailabilityPicker
             value={value}
             onChange={onChange}

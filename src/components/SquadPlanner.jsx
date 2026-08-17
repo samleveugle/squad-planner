@@ -38,12 +38,17 @@ import {
   getDefaultWeekStart,
   getEventsForWeek,
   getWeekStart,
+  parseDate,
   toDateString,
 } from "@/lib/events";
 import { DemoBanner } from "@/components/demo/DemoBanner";
 import { DEMO_READ_ONLY_MESSAGE, getDemoSnapshot } from "@/lib/demo-data";
 import { getResponseKey } from "@/lib/mock-data";
-import { getUnseenPublishedLineups } from "@/lib/lineups";
+import { getPublishedLineup, getUnseenPublishedLineups } from "@/lib/lineups";
+import {
+  readStoredSeenLineups,
+  writeStoredSeenLineups,
+} from "@/lib/seen-lineups";
 
 const ADMIN_TABS = [
   "admin",
@@ -87,7 +92,9 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
   const [lineups, setLineups] = useState({});
   const [matchStats, setMatchStats] = useState({});
   const [attendance, setAttendance] = useState({});
-  const [seenLineups, setSeenLineups] = useState({});
+  const [seenLineups, setSeenLineups] = useState(() =>
+    readStoredSeenLineups(currentPlayer.id)
+  );
   const [weekStart, setWeekStart] = useState(() => getInitialWeekStart(isDemo));
   const [activeTab, setActiveTab] = useState("calendar");
   const [roleView, setRoleView] = useState(() =>
@@ -208,6 +215,7 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
 
   useEffect(() => {
     setRoleView(readStoredRoleView(currentPlayer.id));
+    setSeenLineups(readStoredSeenLineups(currentPlayer.id));
   }, [currentPlayer.id]);
 
   useEffect(() => {
@@ -280,12 +288,29 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
     }
   }
 
-  const markLineupSeen = useCallback((eventId) => {
-    setSeenLineups((previous) => ({
-      ...previous,
-      [eventId]: true,
-    }));
-  }, []);
+  const markLineupSeen = useCallback(
+    (eventId) => {
+      const lineup = getPublishedLineup(lineups, eventId);
+
+      if (!lineup?.publishedAt) {
+        return;
+      }
+
+      setSeenLineups((previous) => {
+        if (previous[eventId] === lineup.publishedAt) {
+          return previous;
+        }
+
+        const next = {
+          ...previous,
+          [eventId]: lineup.publishedAt,
+        };
+        writeStoredSeenLineups(currentPlayerId, next);
+        return next;
+      });
+    },
+    [currentPlayerId, lineups]
+  );
 
   async function handleSaveLineup(eventId, lineupData) {
     if (isDemo) {
@@ -363,6 +388,7 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
       setSeenLineups((previous) => {
         const next = { ...previous };
         delete next[eventId];
+        writeStoredSeenLineups(currentPlayerId, next);
         return next;
       });
     }
@@ -480,11 +506,18 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
   }
 
   function handleViewLineupNotification() {
+    const firstUnseen = unseenLineupEvents[0];
+
+    if (firstUnseen) {
+      setWeekStart(getWeekStart(parseDate(firstUnseen.date)));
+      markLineupSeen(firstUnseen.id);
+    }
+
     if (canSwitchRole) {
       setRoleView("player");
     }
+
     setActiveTab("lineup");
-    unseenLineupEvents.forEach((event) => markLineupSeen(event.id));
   }
 
   const weekViewProps = {
@@ -498,9 +531,7 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
   };
 
   const lineupTabProps = {
-    events: weekEvents,
-    weekStart,
-    onWeekChange: handleWeekChange,
+    events,
     lineups,
     currentPlayerId,
     onLineupViewed: markLineupSeen,
@@ -670,6 +701,7 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
                 <AttendanceOverview
                   events={events}
                   attendance={attendance}
+                  matchStats={matchStats}
                 />
               </TabsContent>
             </>

@@ -1,3 +1,4 @@
+import { EventTitleBlock } from "@/components/events/EventTitleBlock";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -7,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getPlayerSeasonAttendance } from "@/lib/attendance";
-import { formatEventDate, getEventTitle } from "@/lib/events";
+import { formatEventDate } from "@/lib/events";
 import { getPlayerMatchStats, getSeasonTotals } from "@/lib/stats";
 
 export function PlayerStatsView({
@@ -76,8 +77,10 @@ export function PlayerStatsView({
                 key={event.id}
                 className="rounded-lg border bg-card p-3"
               >
-                <p className="font-medium">{formatEventDate(event.date)}</p>
-                <p className="text-xs text-muted-foreground">{event.location}</p>
+                <EventTitleBlock event={event} variant="plain" />
+                <p className="text-xs text-muted-foreground">
+                  {formatEventDate(event.date)} · {event.location}
+                </p>
               </div>
             ))}
           </div>
@@ -94,6 +97,8 @@ export function PlayerStatsView({
           <div className="space-y-2">
             {season.matches.map(({ event, minutes }) => {
               const stats = getPlayerMatchStats(matchStats, event.id, playerId);
+              const hasGoals = stats.goals > 0;
+              const hasAssists = stats.assists > 0;
 
               return (
                 <div
@@ -101,15 +106,21 @@ export function PlayerStatsView({
                   className="flex flex-col gap-2 rounded-lg border bg-card p-3 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div>
-                    <p className="font-medium">{getEventTitle(event)}</p>
+                    <EventTitleBlock event={event} variant="plain" />
                     <p className="text-xs text-muted-foreground">
                       {formatEventDate(event.date)} · {minutes ?? 0} min
                     </p>
                   </div>
-                  <div className="flex gap-2">
-                    <Badge variant="present">{stats.goals} goals</Badge>
-                    <Badge variant="secondary">{stats.assists} assists</Badge>
-                  </div>
+                  {(hasGoals || hasAssists) && (
+                    <div className="flex gap-2">
+                      {hasGoals && (
+                        <Badge variant="present">{stats.goals} goals</Badge>
+                      )}
+                      {hasAssists && (
+                        <Badge variant="secondary">{stats.assists} assists</Badge>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}

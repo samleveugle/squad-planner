@@ -5,18 +5,17 @@ import { useState } from "react";
 import { WeekNavigator } from "@/components/calendar/WeekNavigator";
 import { AttendanceEventForm } from "@/components/stats/AttendanceEventForm";
 import { EventTypeToggle } from "@/components/stats/EventTypeToggle";
+import { EventTitleBlock } from "@/components/events/EventTitleBlock";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { DEMO_READ_ONLY_MESSAGE } from "@/lib/demo-data";
 import {
   formatEventDate,
   formatEventTime,
-  getEventTitle,
 } from "@/lib/events";
 
 export function StatsManager({
@@ -58,7 +57,7 @@ export function StatsManager({
           {filteredEvents.map((event) => (
             <Card key={event.id}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">{getEventTitle(event)}</CardTitle>
+                <EventTitleBlock event={event} />
                 <CardDescription>
                   {formatEventDate(event.date)} · {formatEventTime(event)} ·{" "}
                   {event.location}

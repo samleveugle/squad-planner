@@ -34,6 +34,17 @@ function createCombinedDraft(attendance, matchStats, eventId, playerIds) {
   return draft;
 }
 
+function getInitialStatsOpenByPlayer(matchStats, eventId, playerIds) {
+  const eventStats = matchStats[eventId] ?? {};
+
+  return new Set(
+    playerIds.filter((playerId) => {
+      const stats = eventStats[playerId];
+      return stats && ((stats.goals ?? 0) > 0 || (stats.assists ?? 0) > 0);
+    })
+  );
+}
+
 function selectInputValue(inputEvent) {
   inputEvent.target.select();
 }
@@ -93,7 +104,9 @@ export function AttendanceEventForm({
   const [draft, setDraft] = useState(() =>
     createCombinedDraft(attendance, matchStats, event.id, squadPlayerIds)
   );
-  const [statsOpen, setStatsOpen] = useState(false);
+  const [statsOpenByPlayer, setStatsOpenByPlayer] = useState(() =>
+    getInitialStatsOpenByPlayer(matchStats, event.id, squadPlayerIds)
+  );
   const [message, setMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [hasSavedLocally, setHasSavedLocally] = useState(false);
@@ -115,9 +128,24 @@ export function AttendanceEventForm({
     setDraft(
       createCombinedDraft(attendance, matchStats, event.id, squadPlayerIds)
     );
+    setStatsOpenByPlayer(
+      getInitialStatsOpenByPlayer(matchStats, event.id, squadPlayerIds)
+    );
     setIsEditing(false);
     setHasSavedLocally(false);
   }, [attendance, matchStats, event.id, squadPlayerIds]);
+
+  function openPlayerStats(playerId) {
+    setStatsOpenByPlayer((current) => new Set(current).add(playerId));
+  }
+
+  function closePlayerStats(playerId) {
+    setStatsOpenByPlayer((current) => {
+      const next = new Set(current);
+      next.delete(playerId);
+      return next;
+    });
+  }
 
   function updatePlayer(playerId, patch) {
     setDraft((current) => ({
@@ -193,6 +221,7 @@ export function AttendanceEventForm({
             goals: null,
             assists: null,
           };
+          const statsOpen = statsOpenByPlayer.has(player.id);
 
           return (
             <div key={player.id} className="rounded-lg border p-3">
@@ -237,6 +266,20 @@ export function AttendanceEventForm({
                       }
                     />
 
+                    {!statsOpen && !isFormLocked && (
+                      <div className="flex items-end">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-9 px-2 text-xs text-muted-foreground"
+                          onClick={() => openPlayerStats(player.id)}
+                        >
+                          + goals/assists
+                        </Button>
+                      </div>
+                    )}
+
                     {statsOpen && (
                       <>
                         <StatNumberInput
@@ -267,6 +310,19 @@ export function AttendanceEventForm({
                             });
                           }}
                         />
+                        {!isFormLocked && (
+                          <div className="flex items-end">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-9 px-2 text-xs text-muted-foreground"
+                              onClick={() => closePlayerStats(player.id)}
+                            >
+                              goals/assists verbergen
+                            </Button>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
@@ -276,18 +332,6 @@ export function AttendanceEventForm({
           );
         })}
       </div>
-
-      {isMatch && canEditByDate && !isFormLocked && (
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          className="h-8 px-2 text-muted-foreground"
-          onClick={() => setStatsOpen((open) => !open)}
-        >
-          {statsOpen ? "Goals/assists verbergen" : "Goals/assists tonen (optioneel)"}
-        </Button>
-      )}
 
       {canEditByDate && !readOnly && (
         <div className="flex flex-wrap items-center gap-3">

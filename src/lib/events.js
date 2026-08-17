@@ -115,7 +115,19 @@ export function getDefaultWeekStart(events) {
   return getWeekStart(new Date());
 }
 
-export function getEventTitle(event) {
+export function getEventMatchDetail(event) {
+  if (event.type !== "match") {
+    return null;
+  }
+
+  if (event.isHome) {
+    return event.opponent ? `Thuis vs ${event.opponent}` : "Thuiswedstrijd";
+  }
+
+  return event.opponent ? `Uit vs ${event.opponent}` : "Verplaatsing (TBD)";
+}
+
+export function getEventTypeLabel(event) {
   if (event.type === "training") {
     return "Training";
   }
@@ -124,11 +136,21 @@ export function getEventTitle(event) {
     return event.title?.trim() || "Evenement";
   }
 
-  if (event.isHome) {
-    return event.opponent ? `Thuis vs ${event.opponent}` : "Thuiswedstrijd";
+  if (event.type === "match") {
+    return "Wedstrijd";
   }
 
-  return event.opponent ? `Uit vs ${event.opponent}` : "Verplaatsing (TBD)";
+  return "Event";
+}
+
+export function getEventTitle(event) {
+  const matchDetail = getEventMatchDetail(event);
+
+  if (matchDetail) {
+    return matchDetail;
+  }
+
+  return getEventTypeLabel(event);
 }
 
 export function formatEventDate(dateString) {

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { usePlayers } from "@/context/PlayersContext";
 import { getPlayerSeasonAttendance } from "@/lib/attendance";
 import { formatEventDate, getEventTitle, toDateString } from "@/lib/events";
+import { getPlayerMatchStats, getSeasonTotals } from "@/lib/stats";
 import { cn } from "@/lib/utils";
 
 function formatShortDate(dateString) {
@@ -16,7 +17,7 @@ function formatShortDate(dateString) {
   });
 }
 
-export function AttendanceOverview({ events, attendance }) {
+export function AttendanceOverview({ events, attendance, matchStats = {} }) {
   const { players } = usePlayers();
   const [expandedId, setExpandedId] = useState(null);
 
@@ -66,7 +67,7 @@ export function AttendanceOverview({ events, attendance }) {
       <div>
         <h2 className="text-lg font-semibold">Overzicht</h2>
         <p className="text-sm text-muted-foreground">
-          Tik op een speler voor trainingen en minuten per wedstrijd.
+          Tik op een speler voor trainingen, minuten en goals/assists per wedstrijd.
         </p>
       </div>
 
@@ -83,6 +84,7 @@ export function AttendanceOverview({ events, attendance }) {
             const expanded = expandedId === player.id;
             const hasDetail =
               season.trainingCount > 0 || season.matchCount > 0;
+            const totals = getSeasonTotals(matchStats, player.id);
 
             return (
               <li key={player.id}>
@@ -129,6 +131,12 @@ export function AttendanceOverview({ events, attendance }) {
                           <Badge variant="present">
                             {season.totalMinutes} min
                           </Badge>
+                          {totals.goals > 0 && (
+                            <Badge variant="present">{totals.goals} goals</Badge>
+                          )}
+                          {totals.assists > 0 && (
+                            <Badge variant="secondary">{totals.assists} assists</Badge>
+                          )}
                         </div>
 
                         {season.trainings.length > 0 && (
@@ -150,23 +158,47 @@ export function AttendanceOverview({ events, attendance }) {
                               Wedstrijden
                             </p>
                             <ul className="space-y-1">
-                              {season.matches.map(({ event, minutes }) => (
-                                <li
-                                  key={event.id}
-                                  className="flex items-baseline justify-between gap-3"
-                                >
-                                  <span className="min-w-0 truncate">
-                                    <span className="font-medium tabular-nums">
-                                      {minutes ?? 0}′
+                              {season.matches.map(({ event, minutes }) => {
+                                const stats = getPlayerMatchStats(
+                                  matchStats,
+                                  event.id,
+                                  player.id
+                                );
+                                const hasGoals = stats.goals > 0;
+                                const hasAssists = stats.assists > 0;
+
+                                return (
+                                  <li
+                                    key={event.id}
+                                    className="flex items-baseline justify-between gap-3"
+                                  >
+                                    <span className="min-w-0 truncate">
+                                      <span className="font-medium tabular-nums">
+                                        {minutes ?? 0}′
+                                      </span>
+                                      <span className="text-muted-foreground">
+                                        {" "}
+                                        · {getEventTitle(event)} ·{" "}
+                                        {formatEventDate(event.date)}
+                                      </span>
                                     </span>
-                                    <span className="text-muted-foreground">
-                                      {" "}
-                                      · {getEventTitle(event)} ·{" "}
-                                      {formatEventDate(event.date)}
-                                    </span>
-                                  </span>
-                                </li>
-                              ))}
+                                    {(hasGoals || hasAssists) && (
+                                      <span className="flex shrink-0 gap-1.5">
+                                        {hasGoals && (
+                                          <Badge variant="present">
+                                            {stats.goals} goals
+                                          </Badge>
+                                        )}
+                                        {hasAssists && (
+                                          <Badge variant="secondary">
+                                            {stats.assists} assists
+                                          </Badge>
+                                        )}
+                                      </span>
+                                    )}
+                                  </li>
+                                );
+                              })}
                             </ul>
                           </div>
                         )}

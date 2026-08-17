@@ -35,6 +35,7 @@ export function createEmptyLineup(formation = DEFAULT_FORMATION) {
     bench: [],
     staff: [],
     numbers: {},
+    captainId: null,
     published: false,
     publishedAt: null,
   };
@@ -45,13 +46,21 @@ export function normalizeLineup(lineup, formation = DEFAULT_FORMATION) {
     return createEmptyLineup(formation);
   }
 
-  return {
+  const normalized = {
     ...createEmptyLineup(lineup.formation ?? formation),
     ...lineup,
     bench: lineup.bench ?? [],
     staff: lineup.staff ?? [],
     numbers: lineup.numbers ?? {},
+    captainId: lineup.captainId ?? null,
   };
+
+  const onField = new Set(Object.values(normalized.positions).filter(Boolean));
+  if (normalized.captainId && !onField.has(normalized.captainId)) {
+    normalized.captainId = null;
+  }
+
+  return normalized;
 }
 
 export function getPlayerNumber(lineup, playerId) {
@@ -69,6 +78,25 @@ export function formatPlayerWithNumber(name, number) {
   }
 
   return `${number} · ${name}`;
+}
+
+export function formatFieldPlayerLabel(name, number, isCaptain = false) {
+  const parts = [];
+
+  if (number != null) {
+    parts.push(String(number));
+  }
+
+  if (isCaptain) {
+    parts.push("C");
+  }
+
+  parts.push(name);
+  return parts.join(" · ");
+}
+
+export function getFieldPlayerIds(positions = {}) {
+  return Object.values(positions).filter(Boolean);
 }
 
 export function pruneLineupNumbers(numbers, assignedPlayerIds) {
@@ -193,8 +221,9 @@ export function getUnseenPublishedLineups(events, lineups, seenLineups) {
     if (event.type !== "match") {
       return false;
     }
+
     const lineup = getPublishedLineup(lineups, event.id);
-    return lineup && !seenLineups[event.id];
+    return lineup && seenLineups[event.id] !== lineup.publishedAt;
   });
 }
 

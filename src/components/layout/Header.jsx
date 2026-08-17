@@ -19,7 +19,7 @@ export function Header({
           <p className="text-sm font-medium text-emerald-600">
             Squad Planner{isDemo ? " · Demo" : ""}
           </p>
-          <h1 className="text-2xl font-bold tracking-tight">Voetbalkalender</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Fc Hoje</h1>
         </div>
         <div className="flex flex-col gap-2 sm:items-end">
           <div className="flex flex-wrap items-center gap-2">

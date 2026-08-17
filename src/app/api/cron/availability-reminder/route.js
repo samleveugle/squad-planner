@@ -141,7 +141,6 @@ export async function GET(request) {
 
     const pushResult = await sendPushToExternalIds({
       externalIds: recipientIds,
-      heading: "Squad Planner",
       message: AVAILABILITY_REMINDER_MESSAGE,
       url: process.env.NEXT_PUBLIC_SITE_URL,
     });

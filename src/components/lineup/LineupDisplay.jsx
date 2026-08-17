@@ -7,6 +7,7 @@ export function LineupDisplay({
   bench = [],
   staff = [],
   numbers = {},
+  captainId = null,
   compact = false,
   highlightPlayerId = null,
 }) {
@@ -17,6 +18,7 @@ export function LineupDisplay({
           formationId={formationId}
           positions={positions}
           numbers={numbers}
+          captainId={captainId}
           compact={compact}
           highlightPlayerId={highlightPlayerId}
         />

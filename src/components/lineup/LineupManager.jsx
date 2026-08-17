@@ -1,16 +1,15 @@
 import { LineupBuilder } from "@/components/lineup/LineupBuilder";
 import { WeekNavigator } from "@/components/calendar/WeekNavigator";
+import { EventTitleBlock } from "@/components/events/EventTitleBlock";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   formatEventDate,
   formatEventTime,
-  getEventTitle,
 } from "@/lib/events";
 
 export function LineupManager({
@@ -40,7 +39,7 @@ export function LineupManager({
           {matchEvents.map((event) => (
             <Card key={event.id}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">{getEventTitle(event)}</CardTitle>
+                <EventTitleBlock event={event} />
                 <CardDescription>
                   {formatEventDate(event.date)} · {formatEventTime(event)} ·{" "}
                   {event.location}

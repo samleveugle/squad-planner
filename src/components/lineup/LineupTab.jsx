@@ -3,36 +3,33 @@
 import { useEffect, useMemo } from "react";
 
 import { PublishedLineup } from "@/components/lineup/PublishedLineup";
-import { WeekNavigator } from "@/components/calendar/WeekNavigator";
+import { EventTitleBlock } from "@/components/events/EventTitleBlock";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   formatEventDate,
   formatEventTime,
-  getEventTitle,
 } from "@/lib/events";
 import { getPublishedLineup } from "@/lib/lineups";
 
 export function LineupTab({
   events,
-  weekStart,
-  onWeekChange,
   lineups,
   currentPlayerId,
   onLineupViewed,
 }) {
-  const matchEvents = useMemo(
-    () => events.filter((event) => event.type === "match"),
-    [events]
-  );
   const publishedMatches = useMemo(
-    () => matchEvents.filter((event) => getPublishedLineup(lineups, event.id)),
-    [matchEvents, lineups]
+    () =>
+      events
+        .filter(
+          (event) => event.type === "match" && getPublishedLineup(lineups, event.id)
+        )
+        .sort((a, b) => a.date.localeCompare(b.date)),
+    [events, lineups]
   );
 
   useEffect(() => {
@@ -43,13 +40,7 @@ export function LineupTab({
     <section className="space-y-4">
       <h2 className="text-lg font-semibold">Opstellingen</h2>
 
-      <WeekNavigator weekStart={weekStart} onWeekChange={onWeekChange} />
-
-      {matchEvents.length === 0 ? (
-        <div className="rounded-xl border border-dashed bg-card p-8 text-center">
-          <p className="font-medium">Geen wedstrijden deze week</p>
-        </div>
-      ) : publishedMatches.length === 0 ? (
+      {publishedMatches.length === 0 ? (
         <div className="rounded-xl border border-dashed bg-card p-8 text-center">
           <p className="font-medium">Nog geen gepubliceerde opstelling</p>
         </div>
@@ -61,7 +52,7 @@ export function LineupTab({
             return (
               <Card key={event.id}>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">{getEventTitle(event)}</CardTitle>
+                  <EventTitleBlock event={event} />
                   <CardDescription>
                     {formatEventDate(event.date)} · {formatEventTime(event)} ·{" "}
                     {event.location}

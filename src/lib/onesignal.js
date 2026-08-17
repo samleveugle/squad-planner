@@ -13,7 +13,6 @@ export function getOneSignalConfig() {
 
 export async function sendPushToExternalIds({
   externalIds,
-  heading,
   message,
   url,
 }) {
@@ -39,7 +38,6 @@ export async function sendPushToExternalIds({
         external_id: externalIds,
       },
       target_channel: "push",
-      headings: { en: heading, nl: heading },
       contents: { en: message, nl: message },
       url: url ?? process.env.NEXT_PUBLIC_SITE_URL ?? "/",
     }),

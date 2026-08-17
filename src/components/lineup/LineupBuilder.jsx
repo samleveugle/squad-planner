@@ -24,6 +24,7 @@ import {
   formatPublishedAt,
   getAllAssignedPlayerIds,
   getEligiblePlayers,
+  getFieldPlayerIds,
   getMatchSquadPlayerIds,
   getVisibleBenchSlotCount,
   getVisibleStaffSlotCount,
@@ -65,6 +66,7 @@ function createLineupEditorState(savedLineup) {
     bench: toFilledArray(lineup.bench, visibleBenchSlots),
     staff: toFilledArray(lineup.staff, visibleStaffSlots),
     numbers: lineup.numbers ?? {},
+    captainId: lineup.captainId ?? null,
     visibleBenchSlots,
     visibleStaffSlots,
   };
@@ -78,9 +80,11 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
   const [bench, setBench] = useState(initialState.bench);
   const [staff, setStaff] = useState(initialState.staff);
   const [numbers, setNumbers] = useState(initialState.numbers);
+  const [captainId, setCaptainId] = useState(initialState.captainId);
   const [visibleBenchSlots, setVisibleBenchSlots] = useState(initialState.visibleBenchSlots);
   const [visibleStaffSlots, setVisibleStaffSlots] = useState(initialState.visibleStaffSlots);
   const [savedMessage, setSavedMessage] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     const nextState = createLineupEditorState(savedLineup);
@@ -89,9 +93,21 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
     setBench(nextState.bench);
     setStaff(nextState.staff);
     setNumbers(nextState.numbers);
+    setCaptainId(nextState.captainId);
     setVisibleBenchSlots(nextState.visibleBenchSlots);
     setVisibleStaffSlots(nextState.visibleStaffSlots);
+    setIsEditing(false);
   }, [savedLineup, event.id]);
+
+  useEffect(() => {
+    if (!captainId) {
+      return;
+    }
+
+    if (!getFieldPlayerIds(positions).includes(captainId)) {
+      setCaptainId(null);
+    }
+  }, [positions, captainId]);
 
   const eligiblePlayers = getEligiblePlayers(event.id, responses, players);
   const formationData = getFormation(formation);
@@ -100,6 +116,11 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
   const benchCount = compactArray(bench).length;
   const staffCount = compactArray(staff).length;
   const isPublished = savedLineup?.published ?? false;
+  const isLocked = isPublished && !isEditing;
+  const fieldPlayerIds = getFieldPlayerIds(positions);
+  const fieldPlayers = fieldPlayerIds
+    .map((playerId) => players.find((player) => player.id === playerId))
+    .filter(Boolean);
 
   function getUsedPlayerIds(exclude = {}) {
     const used = getAllAssignedPlayerIds({
@@ -308,6 +329,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
       bench: compactArray(bench),
       staff: compactArray(staff),
       numbers: pruneLineupNumbers(numbers, squadPlayerIds),
+      captainId: fieldPlayerIds.includes(captainId) ? captainId : null,
     };
   }
 
@@ -360,6 +382,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
     }
 
     onPublish(buildLineupPayload());
+    setIsEditing(false);
     setSavedMessage("Opstelling gepubliceerd — spelers krijgen een melding.");
   }
 
@@ -392,7 +415,11 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
         </p>
       )}
 
-      <FormationPicker value={formation} onChange={handleFormationChange} />
+      <FormationPicker
+        value={formation}
+        onChange={handleFormationChange}
+        disabled={isLocked}
+      />
 
       <LineupDisplay
         formationId={formation}
@@ -400,6 +427,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
         bench={bench.slice(0, visibleBenchSlots)}
         staff={staff.slice(0, visibleStaffSlots)}
         numbers={numbers}
+        captainId={captainId}
       />
 
       <div>
@@ -413,6 +441,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
               <Select
                 value={positions[slot.id] ?? EMPTY_VALUE}
                 onValueChange={(value) => handlePositionChange(slot.id, value)}
+                disabled={isLocked}
               >
                 <SelectTrigger className="h-8 min-w-0 flex-1 text-xs">
                   <SelectValue placeholder="Kies speler" />
@@ -431,10 +460,35 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
                 value={positions[slot.id] ? numbers[positions[slot.id]] : null}
                 onChange={handleNumberChange}
                 usedNumbers={getUsedShirtNumbers(positions[slot.id])}
+                disabled={isLocked}
               />
             </div>
           ))}
         </div>
+      </div>
+
+      <div>
+        <p className="mb-2 text-sm font-medium">Kapitein</p>
+        <Select
+          value={captainId ?? EMPTY_VALUE}
+          onValueChange={(value) => {
+            setCaptainId(value === EMPTY_VALUE ? null : value);
+            setSavedMessage("");
+          }}
+          disabled={isLocked || fieldPlayers.length === 0}
+        >
+          <SelectTrigger className="h-8 max-w-xs text-xs">
+            <SelectValue placeholder="Kies kapitein" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={EMPTY_VALUE}>Geen kapitein</SelectItem>
+            {fieldPlayers.map((player) => (
+              <SelectItem key={player.id} value={player.id}>
+                {player.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div>
@@ -448,6 +502,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
               <Select
                 value={playerId ?? EMPTY_VALUE}
                 onValueChange={(value) => handleBenchChange(index, value)}
+                disabled={isLocked}
               >
                 <SelectTrigger className="h-8 min-w-0 flex-1 text-xs">
                   <SelectValue placeholder="Kies speler" />
@@ -466,6 +521,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
                 value={playerId ? numbers[playerId] : null}
                 onChange={handleNumberChange}
                 usedNumbers={getUsedShirtNumbers(playerId)}
+                disabled={isLocked}
               />
             </div>
           ))}
@@ -478,6 +534,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
               size="sm"
               className="h-8 px-2 text-xs text-muted-foreground"
               onClick={handleAddExtraBenchSlot}
+              disabled={isLocked}
             >
               + Extra bankspeler
             </Button>
@@ -490,6 +547,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
                 size="sm"
                 className="h-8 px-2 text-xs text-muted-foreground"
                 onClick={handleRemoveExtraBenchSlot}
+                disabled={isLocked}
               >
                 Extra slot verwijderen
               </Button>
@@ -508,6 +566,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
               <Select
                 value={playerId ?? EMPTY_VALUE}
                 onValueChange={(value) => handleStaffChange(index, value)}
+                disabled={isLocked}
               >
                 <SelectTrigger className="h-8 flex-1 text-xs">
                   <SelectValue placeholder="Kies speler" />
@@ -532,6 +591,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
               size="sm"
               className="h-8 px-2 text-xs text-muted-foreground"
               onClick={handleAddExtraStaffSlot}
+              disabled={isLocked}
             >
               + Extra staflid
             </Button>
@@ -543,6 +603,7 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
               size="sm"
               className="h-8 px-2 text-xs text-muted-foreground"
               onClick={handleRemoveExtraStaffSlot}
+              disabled={isLocked}
             >
               Extra slot verwijderen
             </Button>
@@ -559,17 +620,33 @@ export function LineupBuilder({ event, responses, savedLineup, onSave, onPublish
       </p>
 
       <div className="flex flex-wrap gap-2">
-        <Button type="button" variant="secondary" size="sm" onClick={handleSave}>
-          Opslaan
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          onClick={handlePublish}
-          disabled={!isFieldComplete}
-        >
-          Publiceren
-        </Button>
+        {!isPublished && (
+          <Button type="button" variant="secondary" size="sm" onClick={handleSave}>
+            Opslaan
+          </Button>
+        )}
+        {isPublished && isLocked ? (
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setIsEditing(true);
+              setSavedMessage("");
+            }}
+          >
+            Wijzigen
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            size="sm"
+            onClick={handlePublish}
+            disabled={!isFieldComplete}
+          >
+            Publiceren
+          </Button>
+        )}
         {isPublished && (
           <Button type="button" variant="outline" size="sm" onClick={handleUnpublish}>
             Verbergen
