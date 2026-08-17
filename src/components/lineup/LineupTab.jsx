@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import { WeekNavigator } from "@/components/calendar/WeekNavigator";
 import { PublishedLineup } from "@/components/lineup/PublishedLineup";
 import { EventTitleBlock } from "@/components/events/EventTitleBlock";
 import {
@@ -13,6 +14,8 @@ import {
 import {
   formatEventDate,
   formatEventTime,
+  getEventsForWeek,
+  getWeekStart,
 } from "@/lib/events";
 import { getPublishedLineup } from "@/lib/lineups";
 
@@ -22,14 +25,22 @@ export function LineupTab({
   currentPlayerId,
   onLineupViewed,
 }) {
+  const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
+
+  const weekEvents = useMemo(
+    () => getEventsForWeek(events, weekStart),
+    [events, weekStart]
+  );
+
   const publishedMatches = useMemo(
     () =>
-      events
+      weekEvents
         .filter(
-          (event) => event.type === "match" && getPublishedLineup(lineups, event.id)
+          (event) =>
+            event.type === "match" && getPublishedLineup(lineups, event.id)
         )
         .sort((a, b) => a.date.localeCompare(b.date)),
-    [events, lineups]
+    [weekEvents, lineups]
   );
 
   useEffect(() => {
@@ -40,9 +51,11 @@ export function LineupTab({
     <section className="space-y-4">
       <h2 className="text-lg font-semibold">Opstellingen</h2>
 
+      <WeekNavigator weekStart={weekStart} onWeekChange={setWeekStart} />
+
       {publishedMatches.length === 0 ? (
         <div className="rounded-xl border border-dashed bg-card p-8 text-center">
-          <p className="font-medium">Nog geen gepubliceerde opstelling</p>
+          <p className="font-medium">Geen gepubliceerde opstelling deze week</p>
         </div>
       ) : (
         <div className="space-y-4">
