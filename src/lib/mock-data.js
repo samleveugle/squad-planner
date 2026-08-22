@@ -80,6 +80,9 @@ export const ADMIN_ONLY_PLAYER_IDS = new Set(
   )
 );
 
+/** Staf zonder admin-rechten: enkel Kalender + Team, telt als staf bij aanwezigheden. */
+export const STAFF_VIEW_ONLY_PLAYER_IDS = new Set(["fozzie", "frisse"]);
+
 function generateSeasonEvents() {
   const events = [];
   const seasonStart = parseDate(SEASON.start);

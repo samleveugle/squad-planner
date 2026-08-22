@@ -5,6 +5,11 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SeasonSelector } from "@/components/stats/SeasonSelector";
+import {
+  DEFAULT_TEAM_FILTER,
+  TeamFilterSelector,
+  TEAM_FILTERS,
+} from "@/components/stats/TeamFilterSelector";
 import { usePlayers } from "@/context/PlayersContext";
 import { getPlayerSeasonAttendance } from "@/lib/attendance";
 import { formatEventDate, getEventTitle } from "@/lib/events";
@@ -15,18 +20,7 @@ import {
 import { getPlayerMatchStats, getSeasonTotals } from "@/lib/stats";
 import { cn } from "@/lib/utils";
 
-const DEFAULT_FILTER = "general";
-
-const TEAM_FILTERS = [
-  { id: "general", label: "Algemeen" },
-  { id: "trainings", label: "Trainingen" },
-  { id: "matches", label: "Wedstrijden" },
-  { id: "minutes", label: "Speelminuten" },
-  { id: "goals", label: "Goals" },
-  { id: "assists", label: "Assists" },
-  { id: "yellowCards", label: "Gele kaarten" },
-  { id: "redCards", label: "Rode kaarten" },
-];
+const DEFAULT_FILTER = DEFAULT_TEAM_FILTER;
 
 function formatShortDate(dateString) {
   return new Date(`${dateString}T12:00:00`).toLocaleDateString("nl-BE", {
@@ -62,6 +56,10 @@ function getFilterColumnLabel(filterId) {
 
 function isGeneralFilter(filterId) {
   return filterId === "general";
+}
+
+function statBadgeVariant(value) {
+  return value >= 1 ? "present" : "secondary";
 }
 
 export function TeamOverview({
@@ -125,12 +123,6 @@ export function TeamOverview({
   const showGeneralColumns = isGeneralFilter(activeFilter);
   const statColumnLabel = getFilterColumnLabel(activeFilter);
 
-  function handleFilterChange(filterId) {
-    setActiveFilter((current) =>
-      current === filterId ? DEFAULT_FILTER : filterId
-    );
-  }
-
   if (squadPlayers.length === 0) {
     return (
       <section className="space-y-4">
@@ -151,26 +143,17 @@ export function TeamOverview({
             Filter op statistiek of tik op een speler voor het volledige overzicht.
           </p>
         </div>
-        <SeasonSelector
-          seasonId={seasonId}
-          availableSeasonIds={availableSeasonIds}
-          onSeasonChange={onSeasonChange}
-        />
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {TEAM_FILTERS.map((filter) => (
-          <Button
-            key={filter.id}
-            type="button"
-            size="sm"
-            variant={activeFilter === filter.id ? "default" : "outline"}
-            className="h-8"
-            onClick={() => handleFilterChange(filter.id)}
-          >
-            {filter.label}
-          </Button>
-        ))}
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <SeasonSelector
+            seasonId={seasonId}
+            availableSeasonIds={availableSeasonIds}
+            onSeasonChange={onSeasonChange}
+          />
+          <TeamFilterSelector
+            value={activeFilter}
+            onChange={setActiveFilter}
+          />
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-xl border bg-card">
@@ -247,21 +230,25 @@ export function TeamOverview({
                     ) : (
                       <>
                         <div className="flex flex-wrap gap-2">
-                          <Badge variant="secondary">
+                          <Badge variant={statBadgeVariant(season.trainingCount)}>
                             {season.trainingCount} trainingen
                           </Badge>
-                          <Badge variant="secondary">
+                          <Badge variant={statBadgeVariant(season.matchCount)}>
                             {season.matchCount} wedstrijden
                           </Badge>
-                          <Badge variant="present">
+                          <Badge variant={statBadgeVariant(season.totalMinutes)}>
                             {season.totalMinutes} min
                           </Badge>
-                          <Badge variant="present">{totals.goals} goals</Badge>
-                          <Badge variant="secondary">{totals.assists} assists</Badge>
-                          <Badge variant="outline">
+                          <Badge variant={statBadgeVariant(totals.goals)}>
+                            {totals.goals} goals
+                          </Badge>
+                          <Badge variant={statBadgeVariant(totals.assists)}>
+                            {totals.assists} assists
+                          </Badge>
+                          <Badge variant={statBadgeVariant(totals.yellowCards)}>
                             {totals.yellowCards} gele kaarten
                           </Badge>
-                          <Badge variant="outline">
+                          <Badge variant={statBadgeVariant(totals.redCards)}>
                             {totals.redCards} rode kaarten
                           </Badge>
                         </div>

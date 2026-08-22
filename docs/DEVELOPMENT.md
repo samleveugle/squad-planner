@@ -93,6 +93,8 @@ npm run db:apply-event-attendance
 
 **Admin-only staff (009):** corrigeert stafleden zonder ploegspeler-rol (Pol, Gijs). Voer `supabase/migrations/009_fix_admin_only_staff.sql` uit in de Supabase SQL Editor.
 
+**Staff view-only (012):** staf zonder admin (Fozzie, Frisse) — enkel Kalender + Team, telt als staf bij aanwezigheden. Voer `supabase/migrations/012_staff_view_only.sql` uit in de Supabase SQL Editor.
+
 **Opstelling kapitein (010):** voegt `captain_id` toe aan `lineups`. Voer `supabase/migrations/010_lineup_captain.sql` uit in de Supabase SQL Editor.
 
 **Wedstrijd kaarten (011):** voegt `yellow_cards` en `red_cards` toe aan `match_stats`. Voer `supabase/migrations/011_match_stats_cards.sql` uit in de Supabase SQL Editor.

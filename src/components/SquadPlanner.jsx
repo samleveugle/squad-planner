@@ -44,6 +44,7 @@ import {
 import { DemoBanner } from "@/components/demo/DemoBanner";
 import { DEMO_READ_ONLY_MESSAGE, getDemoSnapshot } from "@/lib/demo-data";
 import { getResponseKey } from "@/lib/mock-data";
+import { isStaffViewOnlyPlayer } from "@/lib/players";
 import { getPublishedLineup, getUnseenPublishedLineups } from "@/lib/lineups";
 import { getAvailableSeasonIds, getCurrentSeasonId } from "@/lib/seasons";
 import {
@@ -123,11 +124,14 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
   const weekEvents = getEventsForWeek(events, weekStart);
   const isAdmin = currentPlayer.isAdmin ?? false;
   const isSquadPlayer = currentPlayer.isSquadPlayer ?? false;
+  const isStaffViewOnly =
+    currentPlayer.isStaffViewOnly ?? isStaffViewOnlyPlayer(currentPlayer);
   const canSwitchRole = isAdmin && isSquadPlayer;
-  const showAdminTabs = isAdmin && (!canSwitchRole || roleView === "admin");
+  const showAdminTabs =
+    isAdmin && !isStaffViewOnly && (!canSwitchRole || roleView === "admin");
   const showPlayerTabs =
     isSquadPlayer && (!canSwitchRole || roleView === "player");
-  const showTeamTab = showPlayerTabs || showAdminTabs;
+  const showTeamTab = showPlayerTabs || showAdminTabs || isStaffViewOnly;
 
   const unseenLineupEvents = useMemo(
     () =>

@@ -20,8 +20,18 @@ export function getPlayersByStatus(players, eventId, responses, status) {
   );
 }
 
+import { STAFF_VIEW_ONLY_PLAYER_IDS } from "@/lib/mock-data";
+
+export function isStaffViewOnlyPlayer(player) {
+  return STAFF_VIEW_ONLY_PLAYER_IDS.has(player?.id);
+}
+
 export function isStaffMember(player) {
-  return Boolean(player.isAdmin) && player.isSquadPlayer === false;
+  if (player.isSquadPlayer !== false) {
+    return false;
+  }
+
+  return Boolean(player.isAdmin) || isStaffViewOnlyPlayer(player);
 }
 
 export function splitPlayersByRole(players) {
