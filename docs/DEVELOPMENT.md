@@ -81,7 +81,7 @@ npm run db:reset-test-data
 npm run db:enable-rls     # enable RLS (if not already)
 ```
 
-Migrations live in `supabase/migrations/`. **`npm run db:migrate` runs only `001_initial_schema.sql`.** For migrations `002`–`010`, use the Supabase SQL Editor or the dedicated scripts below.
+Migrations live in `supabase/migrations/`. **`npm run db:migrate` runs only `001_initial_schema.sql`.** For migrations `002`–`011`, use the Supabase SQL Editor or the dedicated scripts below.
 
 **Event attendance (007):** effectieve aanwezigheid + speelminuten na training/match (`event_attendance`). Los van RSVP `availability`. Apply via Supabase SQL Editor (`007_event_attendance.sql`) or:
 
@@ -94,6 +94,8 @@ npm run db:apply-event-attendance
 **Admin-only staff (009):** corrigeert stafleden zonder ploegspeler-rol (Pol, Gijs). Voer `supabase/migrations/009_fix_admin_only_staff.sql` uit in de Supabase SQL Editor.
 
 **Opstelling kapitein (010):** voegt `captain_id` toe aan `lineups`. Voer `supabase/migrations/010_lineup_captain.sql` uit in de Supabase SQL Editor.
+
+**Wedstrijd kaarten (011):** voegt `yellow_cards` en `red_cards` toe aan `match_stats`. Voer `supabase/migrations/011_match_stats_cards.sql` uit in de Supabase SQL Editor.
 
 On Windows, DB scripts use `--use-system-ca` for SSL.
 

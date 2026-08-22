@@ -7,8 +7,8 @@ export const AVAILABILITY = {
 };
 
 export const SEASON = {
-  start: "2026-08-06",
-  end: "2027-04-29",
+  start: "2026-08-01",
+  end: "2027-04-30",
   training: {
     weekday: 4,
     time: "20:30",

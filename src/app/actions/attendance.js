@@ -43,7 +43,7 @@ export async function getEventAttendance() {
  * @param {string} params.eventId
  * @param {'training'|'match'} params.eventType
  * @param {Record<string, {attended:boolean, minutes?:number|null}>} params.draft
- * @param {Record<string, {goals:number, assists:number}>} [params.statsPayload]
+ * @param {Record<string, {goals:number, assists:number, yellowCards?:number, redCards?:number}>} [params.statsPayload]
  */
 export async function saveEventAttendance({
   eventId,

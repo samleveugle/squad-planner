@@ -9,6 +9,11 @@ import {
 } from "@/components/ui/card";
 import { getPlayerSeasonAttendance } from "@/lib/attendance";
 import { formatEventDate } from "@/lib/events";
+import {
+  filterEventsForSeasonStats,
+  formatSeasonLabel,
+  getSeasonMatchEventIds,
+} from "@/lib/seasons";
 import { getPlayerMatchStats, getSeasonTotals } from "@/lib/stats";
 
 export function PlayerStatsView({
@@ -17,15 +22,18 @@ export function PlayerStatsView({
   matchStats,
   attendance,
   events,
+  seasonId,
 }) {
-  const season = getPlayerSeasonAttendance(attendance, playerId, events);
-  const totals = getSeasonTotals(matchStats, playerId);
+  const seasonEvents = filterEventsForSeasonStats(events, seasonId);
+  const seasonMatchEventIds = getSeasonMatchEventIds(events, seasonId);
+  const season = getPlayerSeasonAttendance(attendance, playerId, seasonEvents);
+  const totals = getSeasonTotals(matchStats, playerId, seasonMatchEventIds);
 
   return (
     <div className="space-y-4">
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Mijn seizoen</CardTitle>
+          <CardTitle className="text-lg">{formatSeasonLabel(seasonId)}</CardTitle>
           <CardDescription>{playerName}</CardDescription>
         </CardHeader>
         <CardContent>
@@ -59,6 +67,18 @@ export function PlayerStatsView({
               className="px-3 py-1 text-sm"
             >
               {totals.assists} assists
+            </Badge>
+            <Badge
+              variant={totals.yellowCards >= 1 ? "present" : "secondary"}
+              className="px-3 py-1 text-sm"
+            >
+              {totals.yellowCards} gele kaarten
+            </Badge>
+            <Badge
+              variant={totals.redCards >= 1 ? "present" : "secondary"}
+              className="px-3 py-1 text-sm"
+            >
+              {totals.redCards} rode kaarten
             </Badge>
           </div>
         </CardContent>
@@ -99,6 +119,8 @@ export function PlayerStatsView({
               const stats = getPlayerMatchStats(matchStats, event.id, playerId);
               const hasGoals = stats.goals > 0;
               const hasAssists = stats.assists > 0;
+              const hasYellow = stats.yellowCards > 0;
+              const hasRed = stats.redCards > 0;
 
               return (
                 <div
@@ -111,13 +133,19 @@ export function PlayerStatsView({
                       {formatEventDate(event.date)} · {minutes ?? 0} min
                     </p>
                   </div>
-                  {(hasGoals || hasAssists) && (
-                    <div className="flex gap-2">
+                  {(hasGoals || hasAssists || hasYellow || hasRed) && (
+                    <div className="flex flex-wrap gap-2">
                       {hasGoals && (
                         <Badge variant="present">{stats.goals} goals</Badge>
                       )}
                       {hasAssists && (
                         <Badge variant="secondary">{stats.assists} assists</Badge>
+                      )}
+                      {hasYellow && (
+                        <Badge variant="outline">{stats.yellowCards} geel</Badge>
+                      )}
+                      {hasRed && (
+                        <Badge variant="outline">{stats.redCards} rood</Badge>
                       )}
                     </div>
                   )}

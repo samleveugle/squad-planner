@@ -14,6 +14,7 @@ import { formatEventDate, toDateString } from "@/lib/events";
 import { buildStatsPayload, parseStatValue } from "@/lib/stats";
 
 const DEFAULT_MATCH_MINUTES = 90;
+const MAX_CARDS = 3;
 
 function createCombinedDraft(attendance, matchStats, eventId, playerIds) {
   const attendanceDraft = createAttendanceDraft(attendance, eventId, playerIds);
@@ -29,6 +30,8 @@ function createCombinedDraft(attendance, matchStats, eventId, playerIds) {
       minutes: attended ? (savedMinutes ?? DEFAULT_MATCH_MINUTES) : savedMinutes,
       goals: savedStats != null ? savedStats.goals : null,
       assists: savedStats != null ? savedStats.assists : null,
+      yellowCards: savedStats != null ? savedStats.yellowCards : null,
+      redCards: savedStats != null ? savedStats.redCards : null,
     };
   }
   return draft;
@@ -41,6 +44,17 @@ function getInitialStatsOpenByPlayer(matchStats, eventId, playerIds) {
     playerIds.filter((playerId) => {
       const stats = eventStats[playerId];
       return stats && ((stats.goals ?? 0) > 0 || (stats.assists ?? 0) > 0);
+    })
+  );
+}
+
+function getInitialCardsOpenByPlayer(matchStats, eventId, playerIds) {
+  const eventStats = matchStats[eventId] ?? {};
+
+  return new Set(
+    playerIds.filter((playerId) => {
+      const stats = eventStats[playerId];
+      return stats && ((stats.yellowCards ?? 0) > 0 || (stats.redCards ?? 0) > 0);
     })
   );
 }
@@ -107,6 +121,9 @@ export function AttendanceEventForm({
   const [statsOpenByPlayer, setStatsOpenByPlayer] = useState(() =>
     getInitialStatsOpenByPlayer(matchStats, event.id, squadPlayerIds)
   );
+  const [cardsOpenByPlayer, setCardsOpenByPlayer] = useState(() =>
+    getInitialCardsOpenByPlayer(matchStats, event.id, squadPlayerIds)
+  );
   const [message, setMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [hasSavedLocally, setHasSavedLocally] = useState(false);
@@ -131,6 +148,9 @@ export function AttendanceEventForm({
     setStatsOpenByPlayer(
       getInitialStatsOpenByPlayer(matchStats, event.id, squadPlayerIds)
     );
+    setCardsOpenByPlayer(
+      getInitialCardsOpenByPlayer(matchStats, event.id, squadPlayerIds)
+    );
     setIsEditing(false);
     setHasSavedLocally(false);
   }, [attendance, matchStats, event.id, squadPlayerIds]);
@@ -141,6 +161,18 @@ export function AttendanceEventForm({
 
   function closePlayerStats(playerId) {
     setStatsOpenByPlayer((current) => {
+      const next = new Set(current);
+      next.delete(playerId);
+      return next;
+    });
+  }
+
+  function openPlayerCards(playerId) {
+    setCardsOpenByPlayer((current) => new Set(current).add(playerId));
+  }
+
+  function closePlayerCards(playerId) {
+    setCardsOpenByPlayer((current) => {
       const next = new Set(current);
       next.delete(playerId);
       return next;
@@ -180,6 +212,8 @@ export function AttendanceEventForm({
         statsDraft[playerId] = {
           goals: parseStatValue(entry.goals ?? 0),
           assists: parseStatValue(entry.assists ?? 0),
+          yellowCards: parseStatValue(entry.yellowCards ?? 0),
+          redCards: parseStatValue(entry.redCards ?? 0),
         };
       }
     }
@@ -220,8 +254,11 @@ export function AttendanceEventForm({
             minutes: null,
             goals: null,
             assists: null,
+            yellowCards: null,
+            redCards: null,
           };
           const statsOpen = statsOpenByPlayer.has(player.id);
+          const cardsOpen = cardsOpenByPlayer.has(player.id);
 
           return (
             <div key={player.id} className="rounded-lg border p-3">
@@ -320,6 +357,66 @@ export function AttendanceEventForm({
                               onClick={() => closePlayerStats(player.id)}
                             >
                               goals/assists verbergen
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {!cardsOpen && !isFormLocked && (
+                      <div className="flex items-end">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-9 px-2 text-xs text-muted-foreground"
+                          onClick={() => openPlayerCards(player.id)}
+                        >
+                          + kaarten
+                        </Button>
+                      </div>
+                    )}
+
+                    {cardsOpen && (
+                      <>
+                        <StatNumberInput
+                          label="Gele kaart"
+                          value={entry.yellowCards}
+                          disabled={isFormLocked}
+                          min={0}
+                          max={MAX_CARDS}
+                          onFocus={selectInputValue}
+                          onChange={(inputEvent) => {
+                            const raw = inputEvent.target.value;
+                            updatePlayer(player.id, {
+                              yellowCards: raw === "" ? null : parseStatValue(raw),
+                            });
+                          }}
+                        />
+                        <StatNumberInput
+                          label="Rode kaart"
+                          value={entry.redCards}
+                          disabled={isFormLocked}
+                          min={0}
+                          max={MAX_CARDS}
+                          onFocus={selectInputValue}
+                          onChange={(inputEvent) => {
+                            const raw = inputEvent.target.value;
+                            updatePlayer(player.id, {
+                              redCards: raw === "" ? null : parseStatValue(raw),
+                            });
+                          }}
+                        />
+                        {!isFormLocked && (
+                          <div className="flex items-end">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-9 px-2 text-xs text-muted-foreground"
+                              onClick={() => closePlayerCards(player.id)}
+                            >
+                              Kaarten verbergen
                             </Button>
                           </div>
                         )}

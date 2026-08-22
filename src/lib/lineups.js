@@ -63,15 +63,6 @@ export function normalizeLineup(lineup, formation = DEFAULT_FORMATION) {
   return normalized;
 }
 
-export function getPlayerNumber(lineup, playerId) {
-  if (!lineup || !playerId) {
-    return null;
-  }
-
-  const number = normalizeLineup(lineup).numbers?.[playerId];
-  return typeof number === "number" ? number : null;
-}
-
 export function formatPlayerWithNumber(name, number) {
   if (number == null) {
     return name;

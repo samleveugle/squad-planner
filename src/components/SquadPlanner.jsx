@@ -28,7 +28,7 @@ import { PushOptIn } from "@/components/notifications/PushOptIn";
 import { LineupManager } from "@/components/lineup/LineupManager";
 import { LineupNotificationBanner } from "@/components/lineup/LineupNotificationBanner";
 import { LineupTab } from "@/components/lineup/LineupTab";
-import { AttendanceOverview } from "@/components/stats/AttendanceOverview";
+import { TeamOverview } from "@/components/stats/TeamOverview";
 import { StatsManager } from "@/components/stats/StatsManager";
 import { StatsTab } from "@/components/stats/StatsTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,6 +45,7 @@ import { DemoBanner } from "@/components/demo/DemoBanner";
 import { DEMO_READ_ONLY_MESSAGE, getDemoSnapshot } from "@/lib/demo-data";
 import { getResponseKey } from "@/lib/mock-data";
 import { getPublishedLineup, getUnseenPublishedLineups } from "@/lib/lineups";
+import { getAvailableSeasonIds, getCurrentSeasonId } from "@/lib/seasons";
 import {
   readStoredSeenLineups,
   writeStoredSeenLineups,
@@ -56,7 +57,6 @@ const ADMIN_TABS = [
   "events-admin",
   "lineup-admin",
   "stats-admin",
-  "attendance-overview",
 ];
 const PLAYER_TABS = ["lineup", "stats"];
 
@@ -102,6 +102,23 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
   );
   const [dataLoading, setDataLoading] = useState(!isDemo);
   const [saveError, setSaveError] = useState(null);
+  const [selectedSeasonId, setSelectedSeasonId] = useState(() =>
+    getCurrentSeasonId()
+  );
+
+  const availableSeasonIds = useMemo(
+    () => getAvailableSeasonIds({ events }),
+    [events]
+  );
+
+  useEffect(() => {
+    if (
+      availableSeasonIds.length > 0 &&
+      !availableSeasonIds.includes(selectedSeasonId)
+    ) {
+      setSelectedSeasonId(getCurrentSeasonId());
+    }
+  }, [availableSeasonIds, selectedSeasonId]);
 
   const weekEvents = getEventsForWeek(events, weekStart);
   const isAdmin = currentPlayer.isAdmin ?? false;
@@ -110,6 +127,7 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
   const showAdminTabs = isAdmin && (!canSwitchRole || roleView === "admin");
   const showPlayerTabs =
     isSquadPlayer && (!canSwitchRole || roleView === "player");
+  const showTeamTab = showPlayerTabs || showAdminTabs;
 
   const unseenLineupEvents = useMemo(
     () =>
@@ -537,6 +555,12 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
     onLineupViewed: markLineupSeen,
   };
 
+  const seasonStatsProps = {
+    seasonId: selectedSeasonId,
+    availableSeasonIds,
+    onSeasonChange: setSelectedSeasonId,
+  };
+
   return (
     <PlayersProvider players={players}>
       <div className="min-h-full bg-muted/30">
@@ -606,11 +630,10 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
             )}
 
             {showAdminTabs && (
-              <>
-                <TabsTrigger value="stats-admin">Stats invoeren</TabsTrigger>
-                <TabsTrigger value="attendance-overview">Overzicht</TabsTrigger>
-              </>
+              <TabsTrigger value="stats-admin">Stats invoeren</TabsTrigger>
             )}
+
+            {showTeamTab && <TabsTrigger value="team">Team</TabsTrigger>}
 
             {showPlayerTabs && (
               <TabsTrigger value="stats">Mijn seizoen</TabsTrigger>
@@ -639,6 +662,18 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
                 matchStats={matchStats}
                 attendance={attendance}
                 events={events}
+                {...seasonStatsProps}
+              />
+            </TabsContent>
+          )}
+
+          {showTeamTab && (
+            <TabsContent value="team">
+              <TeamOverview
+                events={events}
+                attendance={attendance}
+                matchStats={matchStats}
+                {...seasonStatsProps}
               />
             </TabsContent>
           )}
@@ -694,14 +729,6 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
                   matchStats={matchStats}
                   onSaveAttendance={handleSaveAttendance}
                   readOnly={isDemo}
-                />
-              </TabsContent>
-
-              <TabsContent value="attendance-overview">
-                <AttendanceOverview
-                  events={events}
-                  attendance={attendance}
-                  matchStats={matchStats}
                 />
               </TabsContent>
             </>

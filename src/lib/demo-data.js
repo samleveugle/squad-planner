@@ -203,12 +203,18 @@ function buildMatchStats(events, players) {
     squad.slice(0, 14).forEach((player, index) => {
       const goals = (index + matchIndex) % 5 === 0 ? 1 : 0;
       const assists = (index + matchIndex) % 7 === 0 ? 1 : 0;
-      if (goals > 0 || assists > 0 || index < 11) {
-        stats[player.id] = { goals, assists };
+      const yellowCards = (index + matchIndex) % 9 === 0 ? 1 : 0;
+      const redCards = index === 3 && matchIndex === 1 ? 1 : 0;
+      if (goals > 0 || assists > 0 || yellowCards > 0 || redCards > 0 || index < 11) {
+        stats[player.id] = { goals, assists, yellowCards, redCards };
       }
     });
-    // Give demo viewer some stats
-    stats["demo-alex"] = { goals: 1 + (matchIndex % 2), assists: matchIndex % 2 };
+    stats["demo-alex"] = {
+      goals: 1 + (matchIndex % 2),
+      assists: matchIndex % 2,
+      yellowCards: matchIndex % 3,
+      redCards: 0,
+    };
     matchStats[match.id] = stats;
   });
 

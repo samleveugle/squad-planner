@@ -15,7 +15,7 @@ export async function getMatchStats() {
     const supabase = createAdminClient();
     const { data, error } = await supabase
       .from("match_stats")
-      .select("event_id, player_id, goals, assists");
+      .select("event_id, player_id, goals, assists, yellow_cards, red_cards");
 
     if (error) {
       throw error;
