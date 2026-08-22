@@ -74,7 +74,7 @@ function StatNumberInput({
   onFocus,
 }) {
   return (
-    <div className="w-28 shrink-0">
+    <div className="w-24 shrink-0 sm:w-28">
       <label className="mb-1 block text-xs font-medium text-muted-foreground">
         {label}
       </label>
@@ -83,7 +83,7 @@ function StatNumberInput({
         min={min}
         max={max}
         inputMode="numeric"
-        className="h-9 w-28"
+        className="h-9 w-24 sm:w-28"
         disabled={disabled}
         placeholder={placeholder}
         value={value ?? ""}
@@ -286,8 +286,8 @@ export function AttendanceEventForm({
               </div>
 
               {isMatch && entry.attended && (
-                <div className="mt-3 border-t pt-3">
-                  <div className="flex flex-wrap gap-3">
+                <div className="mt-3 space-y-2 border-t pt-3">
+                  <div className="flex min-w-0 items-end gap-1.5 sm:gap-2">
                     <StatNumberInput
                       label="Speelminuten"
                       value={entry.minutes}
@@ -304,125 +304,117 @@ export function AttendanceEventForm({
                     />
 
                     {!statsOpen && !isFormLocked && (
-                      <div className="flex items-end">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-9 px-2 text-xs text-muted-foreground"
-                          onClick={() => openPlayerStats(player.id)}
-                        >
-                          + goals/assists
-                        </Button>
-                      </div>
-                    )}
-
-                    {statsOpen && (
-                      <>
-                        <StatNumberInput
-                          label="Goals"
-                          value={entry.goals}
-                          disabled={isFormLocked}
-                          min={0}
-                          max={20}
-                          onFocus={selectInputValue}
-                          onChange={(inputEvent) => {
-                            const raw = inputEvent.target.value;
-                            updatePlayer(player.id, {
-                              goals: raw === "" ? null : parseStatValue(raw),
-                            });
-                          }}
-                        />
-                        <StatNumberInput
-                          label="Assists"
-                          value={entry.assists}
-                          disabled={isFormLocked}
-                          min={0}
-                          max={20}
-                          onFocus={selectInputValue}
-                          onChange={(inputEvent) => {
-                            const raw = inputEvent.target.value;
-                            updatePlayer(player.id, {
-                              assists: raw === "" ? null : parseStatValue(raw),
-                            });
-                          }}
-                        />
-                        {!isFormLocked && (
-                          <div className="flex items-end">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-9 px-2 text-xs text-muted-foreground"
-                              onClick={() => closePlayerStats(player.id)}
-                            >
-                              goals/assists verbergen
-                            </Button>
-                          </div>
-                        )}
-                      </>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 min-h-9 shrink-0 whitespace-nowrap px-1.5 text-[11px] text-muted-foreground sm:px-2 sm:text-xs"
+                        onClick={() => openPlayerStats(player.id)}
+                      >
+                        + goals/assists
+                      </Button>
                     )}
 
                     {!cardsOpen && !isFormLocked && (
-                      <div className="flex items-end">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 min-h-9 shrink-0 whitespace-nowrap px-1.5 text-[11px] text-muted-foreground sm:px-2 sm:text-xs"
+                        onClick={() => openPlayerCards(player.id)}
+                      >
+                        + kaarten
+                      </Button>
+                    )}
+                  </div>
+
+                  {statsOpen && (
+                    <div className="flex flex-wrap items-end gap-2">
+                      <StatNumberInput
+                        label="Goals"
+                        value={entry.goals}
+                        disabled={isFormLocked}
+                        min={0}
+                        max={20}
+                        onFocus={selectInputValue}
+                        onChange={(inputEvent) => {
+                          const raw = inputEvent.target.value;
+                          updatePlayer(player.id, {
+                            goals: raw === "" ? null : parseStatValue(raw),
+                          });
+                        }}
+                      />
+                      <StatNumberInput
+                        label="Assists"
+                        value={entry.assists}
+                        disabled={isFormLocked}
+                        min={0}
+                        max={20}
+                        onFocus={selectInputValue}
+                        onChange={(inputEvent) => {
+                          const raw = inputEvent.target.value;
+                          updatePlayer(player.id, {
+                            assists: raw === "" ? null : parseStatValue(raw),
+                          });
+                        }}
+                      />
+                      {!isFormLocked && (
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           className="h-9 px-2 text-xs text-muted-foreground"
-                          onClick={() => openPlayerCards(player.id)}
+                          onClick={() => closePlayerStats(player.id)}
                         >
-                          + kaarten
+                          goals/assists verbergen
                         </Button>
-                      </div>
-                    )}
+                      )}
+                    </div>
+                  )}
 
-                    {cardsOpen && (
-                      <>
-                        <StatNumberInput
-                          label="Gele kaart"
-                          value={entry.yellowCards}
-                          disabled={isFormLocked}
-                          min={0}
-                          max={MAX_CARDS}
-                          onFocus={selectInputValue}
-                          onChange={(inputEvent) => {
-                            const raw = inputEvent.target.value;
-                            updatePlayer(player.id, {
-                              yellowCards: raw === "" ? null : parseStatValue(raw),
-                            });
-                          }}
-                        />
-                        <StatNumberInput
-                          label="Rode kaart"
-                          value={entry.redCards}
-                          disabled={isFormLocked}
-                          min={0}
-                          max={MAX_CARDS}
-                          onFocus={selectInputValue}
-                          onChange={(inputEvent) => {
-                            const raw = inputEvent.target.value;
-                            updatePlayer(player.id, {
-                              redCards: raw === "" ? null : parseStatValue(raw),
-                            });
-                          }}
-                        />
-                        {!isFormLocked && (
-                          <div className="flex items-end">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-9 px-2 text-xs text-muted-foreground"
-                              onClick={() => closePlayerCards(player.id)}
-                            >
-                              Kaarten verbergen
-                            </Button>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
+                  {cardsOpen && (
+                    <div className="flex flex-wrap items-end gap-2">
+                      <StatNumberInput
+                        label="Gele kaart"
+                        value={entry.yellowCards}
+                        disabled={isFormLocked}
+                        min={0}
+                        max={MAX_CARDS}
+                        onFocus={selectInputValue}
+                        onChange={(inputEvent) => {
+                          const raw = inputEvent.target.value;
+                          updatePlayer(player.id, {
+                            yellowCards: raw === "" ? null : parseStatValue(raw),
+                          });
+                        }}
+                      />
+                      <StatNumberInput
+                        label="Rode kaart"
+                        value={entry.redCards}
+                        disabled={isFormLocked}
+                        min={0}
+                        max={MAX_CARDS}
+                        onFocus={selectInputValue}
+                        onChange={(inputEvent) => {
+                          const raw = inputEvent.target.value;
+                          updatePlayer(player.id, {
+                            redCards: raw === "" ? null : parseStatValue(raw),
+                          });
+                        }}
+                      />
+                      {!isFormLocked && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-9 px-2 text-xs text-muted-foreground"
+                          onClick={() => closePlayerCards(player.id)}
+                        >
+                          Kaarten verbergen
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
