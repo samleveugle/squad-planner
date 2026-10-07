@@ -115,6 +115,49 @@ export function getDefaultWeekStart(events) {
   return getWeekStart(new Date());
 }
 
+export function formatMatchScore(event) {
+  if (event?.type !== "match") {
+    return null;
+  }
+
+  if (!Number.isInteger(event.scoreFor) || !Number.isInteger(event.scoreAgainst)) {
+    return null;
+  }
+
+  if (event.scoreFor < 0 || event.scoreAgainst < 0) {
+    return null;
+  }
+
+  return `${event.scoreFor}-${event.scoreAgainst}`;
+}
+
+export function parseMatchScore(scoreFor, scoreAgainst) {
+  const forEmpty = scoreFor === "" || scoreFor == null;
+  const againstEmpty = scoreAgainst === "" || scoreAgainst == null;
+
+  if (forEmpty && againstEmpty) {
+    return { ok: true, scoreFor: null, scoreAgainst: null };
+  }
+
+  if (forEmpty || againstEmpty) {
+    return { ok: false, error: "Vul beide scores in of laat beide leeg." };
+  }
+
+  const parsedFor = Number.parseInt(String(scoreFor), 10);
+  const parsedAgainst = Number.parseInt(String(scoreAgainst), 10);
+
+  if (
+    !Number.isInteger(parsedFor) ||
+    !Number.isInteger(parsedAgainst) ||
+    parsedFor < 0 ||
+    parsedAgainst < 0
+  ) {
+    return { ok: false, error: "Score moet 0 of hoger zijn." };
+  }
+
+  return { ok: true, scoreFor: parsedFor, scoreAgainst: parsedAgainst };
+}
+
 export function getEventMatchDetail(event) {
   if (event.type !== "match") {
     return null;

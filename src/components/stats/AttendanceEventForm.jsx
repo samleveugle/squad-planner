@@ -10,8 +10,12 @@ import {
   hasRecordedAttendance,
   parseMinutes,
 } from "@/lib/attendance";
-import { formatEventDate, toDateString } from "@/lib/events";
+import { formatEventDate, parseMatchScore, toDateString } from "@/lib/events";
 import { buildStatsPayload, parseStatValue } from "@/lib/stats";
+
+function scoreInputValue(value) {
+  return value == null ? "" : String(value);
+}
 
 const DEFAULT_MATCH_MINUTES = 90;
 const MAX_CARDS = 3;
@@ -125,8 +129,13 @@ export function AttendanceEventForm({
     getInitialCardsOpenByPlayer(matchStats, event.id, squadPlayerIds)
   );
   const [message, setMessage] = useState("");
+  const [messageIsError, setMessageIsError] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [hasSavedLocally, setHasSavedLocally] = useState(false);
+  const [scoreFor, setScoreFor] = useState(() => scoreInputValue(event.scoreFor));
+  const [scoreAgainst, setScoreAgainst] = useState(() =>
+    scoreInputValue(event.scoreAgainst)
+  );
 
   const today = toDateString(new Date());
   const canEditByDate = event.date <= today;
@@ -153,7 +162,17 @@ export function AttendanceEventForm({
     );
     setIsEditing(false);
     setHasSavedLocally(false);
-  }, [attendance, matchStats, event.id, squadPlayerIds]);
+    setScoreFor(scoreInputValue(event.scoreFor));
+    setScoreAgainst(scoreInputValue(event.scoreAgainst));
+    setMessageIsError(false);
+  }, [
+    attendance,
+    matchStats,
+    event.id,
+    event.scoreFor,
+    event.scoreAgainst,
+    squadPlayerIds,
+  ]);
 
   function openPlayerStats(playerId) {
     setStatsOpenByPlayer((current) => new Set(current).add(playerId));
@@ -188,11 +207,29 @@ export function AttendanceEventForm({
       },
     }));
     setMessage("");
+    setMessageIsError(false);
   }
 
   function handleSave() {
     if (isFormLocked) {
       return;
+    }
+
+    let matchScore;
+
+    if (event.type === "match") {
+      const parsedScore = parseMatchScore(scoreFor, scoreAgainst);
+
+      if (!parsedScore.ok) {
+        setMessageIsError(true);
+        setMessage(parsedScore.error);
+        return;
+      }
+
+      matchScore = {
+        scoreFor: parsedScore.scoreFor,
+        scoreAgainst: parsedScore.scoreAgainst,
+      };
     }
 
     const attendanceDraft = {};
@@ -223,9 +260,11 @@ export function AttendanceEventForm({
       eventType: event.type,
       draft: attendanceDraft,
       statsPayload: event.type === "match" ? buildStatsPayload(statsDraft) : {},
+      score: matchScore,
     });
     setIsEditing(false);
     setHasSavedLocally(true);
+    setMessageIsError(false);
     setMessage("Opgeslagen.");
   }
 
@@ -245,6 +284,45 @@ export function AttendanceEventForm({
         <p className="rounded-md border border-dashed bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
           Invullen mogelijk vanaf {formatEventDate(event.date)}.
         </p>
+      )}
+
+      {isMatch && (
+        <div className="rounded-lg border p-3">
+          <p className="mb-2 text-sm font-medium">Eindstand</p>
+          <div className="flex items-end gap-2">
+            <StatNumberInput
+              label="Ons"
+              value={scoreFor}
+              placeholder="0"
+              disabled={isFormLocked}
+              min={0}
+              max={99}
+              onFocus={selectInputValue}
+              onChange={(inputEvent) => {
+                setScoreFor(inputEvent.target.value);
+                setMessage("");
+                setMessageIsError(false);
+              }}
+            />
+            <span className="mb-1.5 text-lg font-medium text-muted-foreground">
+              –
+            </span>
+            <StatNumberInput
+              label="Tegen"
+              value={scoreAgainst}
+              placeholder="0"
+              disabled={isFormLocked}
+              min={0}
+              max={99}
+              onFocus={selectInputValue}
+              onChange={(inputEvent) => {
+                setScoreAgainst(inputEvent.target.value);
+                setMessage("");
+                setMessageIsError(false);
+              }}
+            />
+          </div>
+        </div>
       )}
 
       <div className="space-y-3">
@@ -439,6 +517,7 @@ export function AttendanceEventForm({
               onClick={() => {
                 setIsEditing(true);
                 setMessage("");
+                setMessageIsError(false);
               }}
             >
               Wijzigen
@@ -453,7 +532,15 @@ export function AttendanceEventForm({
         </p>
       )}
 
-      {message && <p className="text-sm text-muted-foreground">{message}</p>}
+      {message && (
+        <p
+          className={`text-sm ${
+            messageIsError ? "text-red-600 dark:text-red-400" : "text-muted-foreground"
+          }`}
+        >
+          {message}
+        </p>
+      )}
     </div>
   );
 }

@@ -16,7 +16,7 @@ import {
   formatEventTime,
 } from "@/lib/events";
 
-function EventAdminCard({ event, responses }) {
+function EventAdminCard({ event, responses, lateAbsences }) {
   const { getEventResponseSummary } = usePlayers();
   const { unanswered } = getEventResponseSummary(event.id, responses);
 
@@ -29,7 +29,11 @@ function EventAdminCard({ event, responses }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <EventTeamSummary eventId={event.id} responses={responses} />
+        <EventTeamSummary
+          eventId={event.id}
+          responses={responses}
+          lateAbsences={lateAbsences}
+        />
 
         {unanswered.length > 0 && (
           <div className="space-y-2 rounded-lg border bg-muted/40 p-4">
@@ -42,7 +46,13 @@ function EventAdminCard({ event, responses }) {
   );
 }
 
-export function AdminOverview({ events, weekStart, onWeekChange, responses }) {
+export function AdminOverview({
+  events,
+  weekStart,
+  onWeekChange,
+  responses,
+  lateAbsences = {},
+}) {
   return (
     <section className="space-y-4">
       <h2 className="text-lg font-semibold">Beschikbaarheid</h2>
@@ -56,7 +66,12 @@ export function AdminOverview({ events, weekStart, onWeekChange, responses }) {
       ) : (
         <div className="space-y-4">
           {events.map((event) => (
-            <EventAdminCard key={event.id} event={event} responses={responses} />
+            <EventAdminCard
+              key={event.id}
+              event={event}
+              responses={responses}
+              lateAbsences={lateAbsences}
+            />
           ))}
         </div>
       )}

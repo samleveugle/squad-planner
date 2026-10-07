@@ -66,7 +66,11 @@ export async function syncRbfaCalendar() {
     }
 
     updated += 1;
-    upsertRows.push(eventToRow(match));
+    upsertRows.push({
+      ...eventToRow(match),
+      score_for: existing.score_for ?? null,
+      score_against: existing.score_against ?? null,
+    });
   }
 
   if (upsertRows.length > 0) {

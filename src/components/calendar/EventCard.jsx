@@ -16,6 +16,7 @@ export function EventCard({
   availabilityDisabled = false,
   responses,
   currentPlayerId,
+  lateAbsences = {},
 }) {
   const isMatch = event.type === "match";
   const isEvenement = event.type === "evenement";
@@ -59,6 +60,7 @@ export function EventCard({
           eventId={event.id}
           responses={responses}
           currentPlayerId={currentPlayerId}
+          lateAbsences={lateAbsences}
         />
       </CardContent>
     </Card>

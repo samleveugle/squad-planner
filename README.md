@@ -45,7 +45,7 @@ Amateur clubs often organise via WhatsApp and spreadsheets: who is available, wh
 - **Event attendance** — admin records who was actually present (separate from RSVP availability)
 - **Roles** — admin vs player (role switch when you are both)
 - **Auth** — email + password (invite-only: admin registers emails)
-- **Push notifications** — weekly availability reminder (Sunday 20:00) + alert when a lineup is published (OneSignal + Vercel Cron)
+- **Push notifications** — weekly availability reminder (Monday 20:00) + alert when a lineup is published (OneSignal + Vercel Cron)
 - **RBFA sync** — match calendar imported from the Belgian Football Association API
 - **Dark mode** — light / dark theme toggle
 - **PWA** — add to home screen (iOS / Android) with custom app icon

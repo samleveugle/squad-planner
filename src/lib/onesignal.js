@@ -39,6 +39,7 @@ export async function sendPushToExternalIds({
       },
       target_channel: "push",
       contents: { en: message, nl: message },
+      headings: { en: " ", nl: " " },
       url: url ?? process.env.NEXT_PUBLIC_SITE_URL ?? "/",
     }),
   });

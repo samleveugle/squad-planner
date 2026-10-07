@@ -43,6 +43,7 @@ import {
 } from "@/lib/events";
 import { DemoBanner } from "@/components/demo/DemoBanner";
 import { DEMO_READ_ONLY_MESSAGE, getDemoSnapshot } from "@/lib/demo-data";
+import { resolveLateAbsent } from "@/lib/availability";
 import { getResponseKey } from "@/lib/mock-data";
 import { isStaffViewOnlyPlayer } from "@/lib/players";
 import { getPublishedLineup, getUnseenPublishedLineups } from "@/lib/lineups";
@@ -90,6 +91,7 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
   const [players, setPlayers] = useState([]);
   const [events, setEvents] = useState([]);
   const [responses, setResponses] = useState({});
+  const [lateAbsences, setLateAbsences] = useState({});
   const [lineups, setLineups] = useState({});
   const [matchStats, setMatchStats] = useState({});
   const [attendance, setAttendance] = useState({});
@@ -145,6 +147,7 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
       setPlayers(snapshot.players);
       setEvents(snapshot.events);
       setResponses(snapshot.responses);
+      setLateAbsences(snapshot.lateAbsences ?? {});
       setLineups(snapshot.lineups);
       setMatchStats(snapshot.matchStats);
       setAttendance(snapshot.attendance);
@@ -202,6 +205,7 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
 
       if (availabilityResult.success) {
         setResponses(availabilityResult.responses);
+        setLateAbsences(availabilityResult.lateAbsences ?? {});
       } else {
         errors.push(availabilityResult.error);
       }
@@ -285,11 +289,30 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
 
     const responseKey = getResponseKey(currentPlayerId, eventId);
     const previousStatus = responses[responseKey];
+    const previousLateAbsent = Boolean(lateAbsences[responseKey]);
+    const event = events.find((item) => item.id === eventId);
+    const nextLateAbsent = resolveLateAbsent({
+      event,
+      previousStatus,
+      nextStatus: status,
+      previousLateAbsent,
+    });
 
     setResponses((previous) => ({
       ...previous,
       [responseKey]: status,
     }));
+    setLateAbsences((previous) => {
+      const next = { ...previous };
+
+      if (nextLateAbsent) {
+        next[responseKey] = true;
+      } else {
+        delete next[responseKey];
+      }
+
+      return next;
+    });
     setSaveError(null);
 
     const result = await saveAvailability(eventId, status);
@@ -306,7 +329,33 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
 
         return next;
       });
+      setLateAbsences((previous) => {
+        const next = { ...previous };
+
+        if (previousLateAbsent) {
+          next[responseKey] = true;
+        } else {
+          delete next[responseKey];
+        }
+
+        return next;
+      });
       setSaveError(result.error);
+      return;
+    }
+
+    if (result.lateAbsent !== undefined) {
+      setLateAbsences((previous) => {
+        const next = { ...previous };
+
+        if (result.lateAbsent) {
+          next[responseKey] = true;
+        } else {
+          delete next[responseKey];
+        }
+
+        return next;
+      });
     }
   }
 
@@ -453,6 +502,7 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
     eventType,
     draft,
     statsPayload = {},
+    score = undefined,
   }) {
     if (isDemo) {
       setSaveError(DEMO_READ_ONLY_MESSAGE);
@@ -461,6 +511,7 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
 
     const previousAttendance = attendance[eventId];
     const previousStats = matchStats[eventId];
+    const previousEvent = events.find((event) => event.id === eventId);
     const nextEventAttendance = Object.fromEntries(
       Object.entries(draft ?? {}).map(([playerId, entry]) => [
         playerId,
@@ -481,6 +532,20 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
         ...previous,
         [eventId]: statsPayload,
       }));
+
+      if (score !== undefined) {
+        setEvents((previous) =>
+          previous.map((event) =>
+            event.id === eventId
+              ? {
+                  ...event,
+                  scoreFor: score.scoreFor,
+                  scoreAgainst: score.scoreAgainst,
+                }
+              : event
+          )
+        );
+      }
     }
 
     setSaveError(null);
@@ -490,6 +555,7 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
       eventType,
       draft,
       statsPayload,
+      score,
     });
 
     if (!result.success) {
@@ -517,6 +583,14 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
 
           return next;
         });
+
+        if (score !== undefined) {
+          setEvents((previous) =>
+            previous.map((event) =>
+              event.id === eventId ? previousEvent ?? event : event
+            )
+          );
+        }
       }
 
       setSaveError(result.error);
@@ -548,6 +622,7 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
     onWeekChange: handleWeekChange,
     currentPlayerId,
     responses,
+    lateAbsences,
     onAvailabilityChange: handleAvailabilityChange,
     availabilityDisabled: dataLoading,
   };
@@ -690,6 +765,7 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
                   weekStart={weekStart}
                   onWeekChange={handleWeekChange}
                   responses={responses}
+                  lateAbsences={lateAbsences}
                 />
               </TabsContent>
 

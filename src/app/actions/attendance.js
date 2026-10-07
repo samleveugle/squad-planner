@@ -35,21 +35,55 @@ export async function getEventAttendance() {
   }
 }
 
+function normalizeSavedMatchScore(score) {
+  if (score == null) {
+    return { skip: true };
+  }
+
+  const forEmpty = score.scoreFor == null;
+  const againstEmpty = score.scoreAgainst == null;
+
+  if (forEmpty && againstEmpty) {
+    return { skip: false, scoreFor: null, scoreAgainst: null };
+  }
+
+  if (forEmpty || againstEmpty) {
+    return { error: "Vul beide scores in of laat beide leeg." };
+  }
+
+  const scoreFor = Number.parseInt(String(score.scoreFor), 10);
+  const scoreAgainst = Number.parseInt(String(score.scoreAgainst), 10);
+
+  if (
+    !Number.isInteger(scoreFor) ||
+    !Number.isInteger(scoreAgainst) ||
+    scoreFor < 0 ||
+    scoreAgainst < 0
+  ) {
+    return { error: "Score moet 0 of hoger zijn." };
+  }
+
+  return { skip: false, scoreFor, scoreAgainst };
+}
+
 /**
  * Save post-event attendance for one event.
- * For matches, optionally also upsert match_stats from statsPayload.
+ * For matches, optionally also upsert match_stats from statsPayload
+ * and the match score (scoreFor / scoreAgainst).
  *
  * @param {object} params
  * @param {string} params.eventId
  * @param {'training'|'match'} params.eventType
  * @param {Record<string, {attended:boolean, minutes?:number|null}>} params.draft
  * @param {Record<string, {goals:number, assists:number, yellowCards?:number, redCards?:number}>} [params.statsPayload]
+ * @param {{scoreFor:number|null, scoreAgainst:number|null}|null} [params.score]
  */
 export async function saveEventAttendance({
   eventId,
   eventType,
   draft,
   statsPayload = {},
+  score = undefined,
 }) {
   const auth = await requireAdminPlayer();
 
@@ -89,6 +123,27 @@ export async function saveEventAttendance({
     }
 
     if (eventType === "match") {
+      const normalizedScore = normalizeSavedMatchScore(score);
+
+      if (normalizedScore.error) {
+        return { success: false, error: normalizedScore.error };
+      }
+
+      if (!normalizedScore.skip) {
+        const { error: scoreError } = await supabase
+          .from("events")
+          .update({
+            score_for: normalizedScore.scoreFor,
+            score_against: normalizedScore.scoreAgainst,
+          })
+          .eq("id", eventId)
+          .eq("type", "match");
+
+        if (scoreError) {
+          throw scoreError;
+        }
+      }
+
       const statsRows = statsPayloadToRows(eventId, statsPayload);
 
       const { error: statsDeleteError } = await supabase

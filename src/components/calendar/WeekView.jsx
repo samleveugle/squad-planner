@@ -40,6 +40,7 @@ export function WeekView({
   onWeekChange,
   currentPlayerId,
   responses,
+  lateAbsences = {},
   onAvailabilityChange,
   availabilityDisabled = false,
 }) {
@@ -345,6 +346,7 @@ export function WeekView({
                         }
                         availabilityDisabled={availabilityDisabled}
                         responses={responses}
+                        lateAbsences={lateAbsences}
                         currentPlayerId={currentPlayerId}
                       />
                     );

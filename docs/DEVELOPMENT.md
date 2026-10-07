@@ -81,7 +81,7 @@ npm run db:reset-test-data
 npm run db:enable-rls     # enable RLS (if not already)
 ```
 
-Migrations live in `supabase/migrations/`. **`npm run db:migrate` runs only `001_initial_schema.sql`.** For migrations `002`–`011`, use the Supabase SQL Editor or the dedicated scripts below.
+Migrations live in `supabase/migrations/`. **`npm run db:migrate` runs only `001_initial_schema.sql`.** For migrations `002`–`014`, use the Supabase SQL Editor or the dedicated scripts below.
 
 **Event attendance (007):** effectieve aanwezigheid + speelminuten na training/match (`event_attendance`). Los van RSVP `availability`. Apply via Supabase SQL Editor (`007_event_attendance.sql`) or:
 
@@ -98,6 +98,10 @@ npm run db:apply-event-attendance
 **Opstelling kapitein (010):** voegt `captain_id` toe aan `lineups`. Voer `supabase/migrations/010_lineup_captain.sql` uit in de Supabase SQL Editor.
 
 **Wedstrijd kaarten (011):** voegt `yellow_cards` en `red_cards` toe aan `match_stats`. Voer `supabase/migrations/011_match_stats_cards.sql` uit in de Supabase SQL Editor.
+
+**Wedstrijdscore (013):** voegt `score_for` en `score_against` toe aan `events` (onze goals – hun goals). Null = niet ingevuld; 0-0 is geldig. Voer `supabase/migrations/013_match_score.sql` uit in de Supabase SQL Editor.
+
+**Last-minute afwezig (014):** voegt `late_absent` toe aan `availability` (aanwezig → twijfel/afwezig vanaf 00:00 op de trainingsdag; alleen aanwezig wist de vlag). Voer `supabase/migrations/014_late_absent.sql` uit in de Supabase SQL Editor.
 
 On Windows, DB scripts use `--use-system-ca` for SSL.
 
@@ -159,17 +163,17 @@ Local OneSignal: allow `http://localhost:3000` in OneSignal and set `NEXT_PUBLIC
 
 | Trigger | Recipients | Message |
 |---------|------------|---------|
-| Sunday 20:00 (Europe/Brussels) | All squad players with push enabled | Weekly availability reminder |
+| Monday ~20:00 (Europe/Brussels) | All squad players with push enabled | Weekly availability reminder |
 | Admin publishes a lineup | All squad players with push enabled | New lineup available |
 
 Players opt in via the in-app toggle. Push uses OneSignal `external_id` = `player.id`.
 
 ### Cron
 
-`vercel.json` runs `/api/cron/availability-reminder` once per day (~19:00 UTC). That job:
+`vercel.json` runs `/api/cron/availability-reminder` once per day (~18:00 UTC). Hobby cron may start up to ~59 minutes late, so 20:00 Brussels is a target, not an exact guarantee. 18:00 UTC is 20:00 in CEST and 19:00 in CET. That job:
 
-1. Syncs the RBFA match calendar
-2. Sends the Sunday evening availability reminder (Europe/Brussels window), to **all opt-in squad players** when there are events in the upcoming week
+1. Sends the Monday evening availability reminder (Europe/Brussels window) when it is Monday, to **all opt-in squad players** when there are events in the current week
+2. Syncs the RBFA match calendar (every day, after the reminder so a slow sync cannot delay the push)
 
 Publishing a lineup triggers a separate push immediately from the `publishLineup` server action (not via cron).
 

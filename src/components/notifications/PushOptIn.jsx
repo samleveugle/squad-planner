@@ -260,7 +260,7 @@ export function PushOptIn({ currentPlayer }) {
             <p className="text-sm font-medium">Herinnering</p>
             {!loading && <Badge variant={statusVariant}>{statusLabel}</Badge>}
           </div>
-          <p className="text-xs text-muted-foreground">Elke zondag om 20:00.</p>
+          <p className="text-xs text-muted-foreground">Elke maandag om 20:00.</p>
         </div>
 
         {loading ? (

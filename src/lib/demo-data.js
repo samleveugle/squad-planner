@@ -87,6 +87,7 @@ function buildEventsAroundToday() {
       location: isHome ? "Sportpark Demo" : "Uitstadion",
       isHome,
       opponent,
+      ...(weekOffset === -1 ? { scoreFor: 5, scoreAgainst: 3 } : {}),
     });
 
     if (weekOffset === 2) {
@@ -133,6 +134,24 @@ function buildAvailability(players, events) {
   }
 
   return responses;
+}
+
+function buildLateAbsences(events, responses) {
+  const lateAbsences = {};
+  const today = toDateString(new Date());
+  const pastTraining = events.find(
+    (event) => event.type === "training" && event.date < today
+  );
+
+  if (!pastTraining) {
+    return lateAbsences;
+  }
+
+  const playerId = "demo-jordan";
+  const responseKey = getResponseKey(playerId, pastTraining.id);
+  responses[responseKey] = "absent";
+  lateAbsences[responseKey] = true;
+  return lateAbsences;
 }
 
 function buildLineupForMatch(matchEvent, players) {
@@ -279,6 +298,7 @@ export function getDemoSnapshot() {
   const players = DEMO_PLAYER_DEFS.map((p) => ({ ...p, email: null }));
   const events = buildEventsAroundToday();
   const responses = buildAvailability(players, events);
+  const lateAbsences = buildLateAbsences(events, responses);
   const lineups = buildLineups(events, players);
   const matchStats = buildMatchStats(events, players);
   const attendance = buildAttendance(events, players);
@@ -287,6 +307,7 @@ export function getDemoSnapshot() {
     players,
     events,
     responses,
+    lateAbsences,
     lineups,
     matchStats,
     attendance,

@@ -3,9 +3,15 @@
 import { AvailabilityBadge } from "@/components/availability/AvailabilityBadge";
 import { PlayerNameList } from "@/components/availability/PlayerNameList";
 import { usePlayers } from "@/context/PlayersContext";
+import { getResponseKey } from "@/lib/mock-data";
 import { formatRoleBreakdown } from "@/lib/players";
 
-export function EventTeamSummary({ eventId, responses, currentPlayerId }) {
+export function EventTeamSummary({
+  eventId,
+  responses,
+  currentPlayerId,
+  lateAbsences = {},
+}) {
   const { getEventResponseSummary } = usePlayers();
   const { present, doubt, absent, unanswered } = getEventResponseSummary(
     eventId,
@@ -13,6 +19,11 @@ export function EventTeamSummary({ eventId, responses, currentPlayerId }) {
   );
   const respondedCount = present.length + doubt.length + absent.length;
   const totalPlayers = respondedCount + unanswered.length;
+  const latePlayerIds = new Set(
+    [...doubt, ...absent]
+      .filter((player) => lateAbsences[getResponseKey(player.id, eventId)])
+      .map((player) => player.id)
+  );
 
   return (
     <div className="space-y-3 rounded-lg border bg-muted/40 p-4">
@@ -41,7 +52,11 @@ export function EventTeamSummary({ eventId, responses, currentPlayerId }) {
               {formatRoleBreakdown(doubt)}
             </span>
           </div>
-          <PlayerNameList players={doubt} emptyText="—" />
+          <PlayerNameList
+            players={doubt}
+            emptyText="—"
+            lateAbsenceIds={latePlayerIds}
+          />
         </div>
 
         <div className="space-y-2">
@@ -51,7 +66,11 @@ export function EventTeamSummary({ eventId, responses, currentPlayerId }) {
               {formatRoleBreakdown(absent)}
             </span>
           </div>
-          <PlayerNameList players={absent} emptyText="—" />
+          <PlayerNameList
+            players={absent}
+            emptyText="—"
+            lateAbsenceIds={latePlayerIds}
+          />
         </div>
       </div>
 
