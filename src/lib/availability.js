@@ -25,7 +25,7 @@ export function rowsToLateAbsencesMap(rows) {
   }, {});
 }
 
-export function isLastMinuteTrainingPullout({
+function isLastMinuteTrainingPullout({
   event,
   previousStatus,
   nextStatus,

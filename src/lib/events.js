@@ -115,20 +115,61 @@ export function getDefaultWeekStart(events) {
   return getWeekStart(new Date());
 }
 
-export function formatMatchScore(event) {
+export const CLUB_NAME = "Fc Hoje";
+
+export function getOpponentName(event) {
+  return event?.opponent?.trim() || "Tegenstander";
+}
+
+function hasMatchScore(event) {
   if (event?.type !== "match") {
-    return null;
+    return false;
   }
 
   if (!Number.isInteger(event.scoreFor) || !Number.isInteger(event.scoreAgainst)) {
+    return false;
+  }
+
+  return event.scoreFor >= 0 && event.scoreAgainst >= 0;
+}
+
+function formatMatchScore(event) {
+  if (!hasMatchScore(event)) {
     return null;
   }
 
-  if (event.scoreFor < 0 || event.scoreAgainst < 0) {
+  if (event.isHome) {
+    return `${event.scoreFor}-${event.scoreAgainst}`;
+  }
+
+  return `${event.scoreAgainst}-${event.scoreFor}`;
+}
+
+function formatMatchResult(event) {
+  if (!hasMatchScore(event)) {
     return null;
   }
 
-  return `${event.scoreFor}-${event.scoreAgainst}`;
+  if (event.scoreFor > event.scoreAgainst) {
+    return "winst";
+  }
+
+  if (event.scoreFor < event.scoreAgainst) {
+    return "verlies";
+  }
+
+  return "gelijk";
+}
+
+export function formatMatchScoreLine(event) {
+  const score = formatMatchScore(event);
+  const result = formatMatchResult(event);
+
+  if (!score || !result) {
+    return null;
+  }
+
+  return `${score} (${result})`;
 }
 
 export function parseMatchScore(scoreFor, scoreAgainst) {
@@ -156,6 +197,46 @@ export function parseMatchScore(scoreFor, scoreAgainst) {
   }
 
   return { ok: true, scoreFor: parsedFor, scoreAgainst: parsedAgainst };
+}
+
+export function toClubScore({ isHome, homeGoals, awayGoals }) {
+  const parsed = parseMatchScore(homeGoals, awayGoals);
+
+  if (!parsed.ok) {
+    return parsed;
+  }
+
+  if (parsed.scoreFor == null && parsed.scoreAgainst == null) {
+    return { ok: true, scoreFor: null, scoreAgainst: null };
+  }
+
+  if (isHome) {
+    return {
+      ok: true,
+      scoreFor: parsed.scoreFor,
+      scoreAgainst: parsed.scoreAgainst,
+    };
+  }
+
+  return {
+    ok: true,
+    scoreFor: parsed.scoreAgainst,
+    scoreAgainst: parsed.scoreFor,
+  };
+}
+
+export function toHomeAwayGoals(event) {
+  if (event?.isHome) {
+    return {
+      homeGoals: event.scoreFor ?? null,
+      awayGoals: event.scoreAgainst ?? null,
+    };
+  }
+
+  return {
+    homeGoals: event.scoreAgainst ?? null,
+    awayGoals: event.scoreFor ?? null,
+  };
 }
 
 export function getEventMatchDetail(event) {

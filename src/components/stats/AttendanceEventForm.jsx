@@ -10,7 +10,14 @@ import {
   hasRecordedAttendance,
   parseMinutes,
 } from "@/lib/attendance";
-import { formatEventDate, parseMatchScore, toDateString } from "@/lib/events";
+import {
+  CLUB_NAME,
+  formatEventDate,
+  getOpponentName,
+  toClubScore,
+  toDateString,
+  toHomeAwayGoals,
+} from "@/lib/events";
 import { buildStatsPayload, parseStatValue } from "@/lib/stats";
 
 function scoreInputValue(value) {
@@ -79,7 +86,10 @@ function StatNumberInput({
 }) {
   return (
     <div className="w-24 shrink-0 sm:w-28">
-      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+      <label
+        className="mb-1 block truncate text-xs font-medium text-muted-foreground"
+        title={label}
+      >
         {label}
       </label>
       <Input
@@ -132,9 +142,12 @@ export function AttendanceEventForm({
   const [messageIsError, setMessageIsError] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [hasSavedLocally, setHasSavedLocally] = useState(false);
-  const [scoreFor, setScoreFor] = useState(() => scoreInputValue(event.scoreFor));
-  const [scoreAgainst, setScoreAgainst] = useState(() =>
-    scoreInputValue(event.scoreAgainst)
+  const initialDisplayGoals = toHomeAwayGoals(event);
+  const [homeGoals, setHomeGoals] = useState(() =>
+    scoreInputValue(initialDisplayGoals.homeGoals)
+  );
+  const [awayGoals, setAwayGoals] = useState(() =>
+    scoreInputValue(initialDisplayGoals.awayGoals)
   );
 
   const today = toDateString(new Date());
@@ -162,8 +175,9 @@ export function AttendanceEventForm({
     );
     setIsEditing(false);
     setHasSavedLocally(false);
-    setScoreFor(scoreInputValue(event.scoreFor));
-    setScoreAgainst(scoreInputValue(event.scoreAgainst));
+    const displayGoals = toHomeAwayGoals(event);
+    setHomeGoals(scoreInputValue(displayGoals.homeGoals));
+    setAwayGoals(scoreInputValue(displayGoals.awayGoals));
     setMessageIsError(false);
   }, [
     attendance,
@@ -218,7 +232,11 @@ export function AttendanceEventForm({
     let matchScore;
 
     if (event.type === "match") {
-      const parsedScore = parseMatchScore(scoreFor, scoreAgainst);
+      const parsedScore = toClubScore({
+        isHome: Boolean(event.isHome),
+        homeGoals,
+        awayGoals,
+      });
 
       if (!parsedScore.ok) {
         setMessageIsError(true);
@@ -291,15 +309,15 @@ export function AttendanceEventForm({
           <p className="mb-2 text-sm font-medium">Eindstand</p>
           <div className="flex items-end gap-2">
             <StatNumberInput
-              label="Ons"
-              value={scoreFor}
+              label={event.isHome ? CLUB_NAME : getOpponentName(event)}
+              value={homeGoals}
               placeholder="0"
               disabled={isFormLocked}
               min={0}
               max={99}
               onFocus={selectInputValue}
               onChange={(inputEvent) => {
-                setScoreFor(inputEvent.target.value);
+                setHomeGoals(inputEvent.target.value);
                 setMessage("");
                 setMessageIsError(false);
               }}
@@ -308,15 +326,15 @@ export function AttendanceEventForm({
               –
             </span>
             <StatNumberInput
-              label="Tegen"
-              value={scoreAgainst}
+              label={event.isHome ? getOpponentName(event) : CLUB_NAME}
+              value={awayGoals}
               placeholder="0"
               disabled={isFormLocked}
               min={0}
               max={99}
               onFocus={selectInputValue}
               onChange={(inputEvent) => {
-                setScoreAgainst(inputEvent.target.value);
+                setAwayGoals(inputEvent.target.value);
                 setMessage("");
                 setMessageIsError(false);
               }}

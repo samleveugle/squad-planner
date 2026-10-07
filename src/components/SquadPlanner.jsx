@@ -79,6 +79,18 @@ function sameWeek(a, b) {
   return toDateString(getWeekStart(a)) === toDateString(getWeekStart(b));
 }
 
+function withLateAbsent(map, responseKey, lateAbsent) {
+  const next = { ...map };
+
+  if (lateAbsent) {
+    next[responseKey] = true;
+  } else {
+    delete next[responseKey];
+  }
+
+  return next;
+}
+
 function getInitialWeekStart(isDemo) {
   if (isDemo) {
     return getDefaultWeekStart(getDemoSnapshot().events);
@@ -302,17 +314,7 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
       ...previous,
       [responseKey]: status,
     }));
-    setLateAbsences((previous) => {
-      const next = { ...previous };
-
-      if (nextLateAbsent) {
-        next[responseKey] = true;
-      } else {
-        delete next[responseKey];
-      }
-
-      return next;
-    });
+    setLateAbsences((previous) => withLateAbsent(previous, responseKey, nextLateAbsent));
     setSaveError(null);
 
     const result = await saveAvailability(eventId, status);
@@ -329,33 +331,17 @@ export function SquadPlanner({ currentPlayer, isDemo = false }) {
 
         return next;
       });
-      setLateAbsences((previous) => {
-        const next = { ...previous };
-
-        if (previousLateAbsent) {
-          next[responseKey] = true;
-        } else {
-          delete next[responseKey];
-        }
-
-        return next;
-      });
+      setLateAbsences((previous) =>
+        withLateAbsent(previous, responseKey, previousLateAbsent)
+      );
       setSaveError(result.error);
       return;
     }
 
     if (result.lateAbsent !== undefined) {
-      setLateAbsences((previous) => {
-        const next = { ...previous };
-
-        if (result.lateAbsent) {
-          next[responseKey] = true;
-        } else {
-          delete next[responseKey];
-        }
-
-        return next;
-      });
+      setLateAbsences((previous) =>
+        withLateAbsent(previous, responseKey, result.lateAbsent)
+      );
     }
   }
 

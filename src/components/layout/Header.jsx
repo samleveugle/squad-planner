@@ -4,6 +4,7 @@ import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { LogoutButton } from "@/components/layout/LogoutButton";
 import { RoleViewSwitch } from "@/components/layout/RoleViewSwitch";
 import { Button } from "@/components/ui/button";
+import { CLUB_NAME } from "@/lib/events";
 
 export function Header({
   currentPlayer,
@@ -19,7 +20,7 @@ export function Header({
           <p className="text-sm font-medium text-emerald-600">
             Squad Planner{isDemo ? " · Demo" : ""}
           </p>
-          <h1 className="text-2xl font-bold tracking-tight">Fc Hoje</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{CLUB_NAME}</h1>
         </div>
         <div className="flex flex-col gap-2 sm:items-end">
           <div className="flex flex-wrap items-center gap-2">

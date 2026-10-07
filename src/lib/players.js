@@ -1,3 +1,7 @@
+import { STAFF_VIEW_ONLY_PLAYER_IDS, getResponseKey } from "@/lib/mock-data";
+
+export { getResponseKey };
+
 export function toPlayerId(name) {
   return name.trim().toLowerCase().replace(/\s+/g, "-");
 }
@@ -10,17 +14,11 @@ export function getSquadPlayers(players) {
   return players.filter((player) => player.isSquadPlayer);
 }
 
-export function getResponseKey(playerId, eventId) {
-  return `${playerId}-${eventId}`;
-}
-
 export function getPlayersByStatus(players, eventId, responses, status) {
   return players.filter(
     (player) => responses[getResponseKey(player.id, eventId)] === status
   );
 }
-
-import { STAFF_VIEW_ONLY_PLAYER_IDS } from "@/lib/mock-data";
 
 export function isStaffViewOnlyPlayer(player) {
   return STAFF_VIEW_ONLY_PLAYER_IDS.has(player?.id);
