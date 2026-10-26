@@ -81,7 +81,7 @@ npm run db:reset-test-data
 npm run db:enable-rls     # enable RLS (if not already)
 ```
 
-Migrations live in `supabase/migrations/`. **`npm run db:migrate` runs only `001_initial_schema.sql`.** For migrations `002`–`014`, use the Supabase SQL Editor or the dedicated scripts below.
+Migrations live in `supabase/migrations/`. **`npm run db:migrate` runs only `001_initial_schema.sql`.** For migrations `002`–`015`, use the Supabase SQL Editor or the dedicated scripts below.
 
 **Event attendance (007):** effectieve aanwezigheid + speelminuten na training/match (`event_attendance`). Los van RSVP `availability`. Apply via Supabase SQL Editor (`007_event_attendance.sql`) or:
 
@@ -93,7 +93,9 @@ npm run db:apply-event-attendance
 
 **Admin-only staff (009):** corrigeert stafleden zonder ploegspeler-rol (Pol, Gijs). Voer `supabase/migrations/009_fix_admin_only_staff.sql` uit in de Supabase SQL Editor.
 
-**Staff view-only (012):** staf zonder admin (Fozzie, Frisse) — enkel Kalender + Team, telt als staf bij aanwezigheden. Voer `supabase/migrations/012_staff_view_only.sql` uit in de Supabase SQL Editor.
+**Staff view-only (012):** staf zonder admin (Fozzie) — enkel Kalender + Team, telt als staf bij aanwezigheden. Voer `supabase/migrations/012_staff_view_only.sql` uit in de Supabase SQL Editor.
+
+**Frisse admin (015):** Frisse wordt staf-admin (geen ploegspeler), zoals Pol/Gijs. Fozzie blijft view-only. Voer `supabase/migrations/015_frisse_admin.sql` uit in de Supabase SQL Editor.
 
 **Opstelling kapitein (010):** voegt `captain_id` toe aan `lineups`. Voer `supabase/migrations/010_lineup_captain.sql` uit in de Supabase SQL Editor.
 

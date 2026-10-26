@@ -23,6 +23,7 @@ export const SEASON = {
 const ADMINS = [
   { name: "Pol", isSquadPlayer: false },
   { name: "Gijs", isSquadPlayer: false },
+  { name: "Frisse", isSquadPlayer: false },
   { name: "Sam", isSquadPlayer: true },
   { name: "Massi", isSquadPlayer: true },
   { name: "Senne", isSquadPlayer: true },
@@ -81,7 +82,7 @@ export const ADMIN_ONLY_PLAYER_IDS = new Set(
 );
 
 /** Staf zonder admin-rechten: enkel Kalender + Team, telt als staf bij aanwezigheden. */
-export const STAFF_VIEW_ONLY_PLAYER_IDS = new Set(["fozzie", "frisse"]);
+export const STAFF_VIEW_ONLY_PLAYER_IDS = new Set(["fozzie"]);
 
 function generateSeasonEvents() {
   const events = [];
